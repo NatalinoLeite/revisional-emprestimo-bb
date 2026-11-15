@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Revisional - Banco do Brasil | Preview Local</title>
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --primary: #1e3a8a;
+      --primary-hover: #172554;
+      --primary-light: #eff6ff;
+      --secondary: #475569;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --success-bg: #ecfdf5;
+      --success-text: #065f46;
+      --success-border: #10b981;
+      --warning-bg: #fffbeb;
+      --warning-text: #92400e;
+      --warning-border: #f59e0b;
+      --danger-bg: #fef2f2;
+      --danger-text: #991b1b;
+      --danger-border: #ef4444;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      background: var(--card-bg);
+      padding: 20px 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-badge {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .user-badge {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .stepper {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .step-item.active {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .step-item.completed {
+      color: var(--success-text);
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .step-item.active .step-number {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .step-item.completed .step-number {
+      background: var(--success-border);
+      color: #ffffff;
+    }
+
+    .wizard-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+
+    .form-control {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #fff;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    }
+
+    .upload-area {
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius);
+      padding: 36px 20px;
+      text-align: center;
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 20px;
+    }
+
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .upload-icon {
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+
+    .upload-text {
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .upload-subtext {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .alert-box {
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.4;
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border-left: 4px solid var(--warning-border);
+    }
+
+    .alert-info {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-left: 4px solid var(--primary);
+    }
+
+    .btn-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #e2e8f0; color: var(--secondary); }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-success { background: #059669; color: #fff; }
+    .btn-success:hover { background: #047857; }
+
+    .semaforo-card {
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      border-left: 6px solid transparent;
+    }
+
+    .semaforo-verde { background: var(--success-bg); color: var(--success-text); border-left-color: var(--success-border); }
+    .semaforo-amarelo { background: var(--warning-bg); color: var(--warning-text); border-left-color: var(--warning-border); }
+    .semaforo-vermelho { background: var(--danger-bg); color: var(--danger-text); border-left-color: var(--danger-border); }
+
+    .semaforo-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .semaforo-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+
+    .semaforo-verde .semaforo-dot { background: var(--success-border); }
+    .semaforo-amarelo .semaforo-dot { background: var(--warning-border); }
+    .semaforo-vermelho .semaforo-dot { background: var(--danger-border); }
+
+    .semaforo-desc { font-size: 0.95rem; margin-bottom: 12px; }
+    .semaforo-legal { font-size: 0.78rem; opacity: 0.85; font-style: italic; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .metric-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 4px;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .table-responsive { overflow-x: auto; margin-bottom: 24px; }
+    .cenarios-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
+    .cenarios-table th { background: #f1f5f9; color: var(--secondary); padding: 10px 12px; font-weight: 600; border-bottom: 2px solid var(--border); }
+    .cenarios-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+    .cenarios-table tr:hover { background: #f8fafc; }
+    .cenarios-table tr.destaque { background: #eff6ff; font-weight: 600; }
+
+    .bar-chart-container { background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 18px; margin-bottom: 24px; }
+    .bar-group { margin-bottom: 14px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; }
+    .bar-track { background: #e2e8f0; height: 20px; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+    .spinner-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: #fff;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="app-title">
+        <span>⚖️ Revisional de Empréstimos</span>
+        <span class="app-badge">BB Crédito Salário</span>
+      </div>
+      <div class="user-badge">
+        Operador: <b>Dr. Advogado</b> (Administrador) | <span style="color:#059669; font-weight:600;">● Ambiente Pronto</span>
+      </div>
+    </header>
+
+    <nav class="stepper">
+      <div class="step-item active" id="step-indicator-1" onclick="mudarPasso(1)">
+        <div class="step-number">1</div>
+        <span>Cliente & Processo</span>
+      </div>
+      <div class="step-item" id="step-indicator-2" onclick="mudarPasso(2)">
+        <div class="step-number">2</div>
+        <span>Contrato & IA</span>
+      </div>
+      <div class="step-item" id="step-indicator-3" onclick="mudarPasso(3)">
+        <div class="step-number">3</div>
+        <span>Taxas BACEN</span>
+      </div>
+      <div class="step-item" id="step-indicator-4" onclick="mudarPasso(4)">
+        <div class="step-number">4</div>
+        <span>Resultado & Viabilidade</span>
+      </div>
+    </nav>
+
+    <!-- PASSO 1 -->
+    <div id="step-1" class="wizard-card">
+      <div class="card-header">
+        <h2 class="card-title">Passo 1: Identificação do Cliente e Processo</h2>
+        <p class="card-desc">Localize o cliente existente na planilha ou informe os dados para nova análise.</p>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nome do Cliente *</label>
+          <input type="text" id="cli-nome" class="form-control" value="Maria das Graças Oliveira">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CPF</label>
+          <input type="text" id="cli-cpf" class="form-control" value="123.456.789-00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nº Processo Judicial (Se houver)</label>
+          <input type="text" id="cli-proc" class="form-control" value="1002345-89.2024.8.26.0100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Renda Líquida Mensal (R$)</label>
+          <input type="number" id="cli-renda" class="form-control" value="2800.00">
+        </div>
+      </div>
+      <div class="btn-toolbar">
+        <div></div>
+        <button class="btn btn-primary" onclick="mudarPasso(2)">Continuar para o Contrato &rarr;</button>
+      </div>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div id="step-2" class="wizard-card" style="display: none;">
+      <div class="card-header">
+        <h2 class="card-title">Passo 2: Extração e Conferência dos Dados do Contrato</h2>
+        <p class="card-desc">Faça upload da CCB ou contrato para extração com IA, ou valide os dados abaixo.</p>
+      </div>
+
+      <div class="upload-area" onclick="simularUploadIA()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Clique aqui para simular o upload de uma Cédula de Crédito Bancário (CCB)</div>
+        <div class="upload-subtext">A IA (Gemini API) lerá o documento e preencherá os campos automaticamente</div>
+      </div>
+
+      <div class="alert-box alert-info" id="badge-upload" style="display: none;">
+        <span>✅ Documento lido com sucesso: <b>CCB_BB_CreditoSalario_982341.pdf</b></span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Banco</label>
+          <input type="text" id="con-banco" class="form-control" value="BCO DO BRASIL S.A.">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modalidade</label>
+          <input type="text" id="con-mod" class="form-control" value="Crédito pessoal não consignado - Prefixado">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data da Contratação</label>
+          <input type="date" id="con-data" class="form-control" value="2023-05-15">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor Liberado (R$)</label>
+          <input type="number" id="con-valor" class="form-control" value="20000.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prazo (meses)</label>
+          <input type="number" id="con-prazo" class="form-control" value="48">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor da Parcela Atual (R$)</label>
+          <input type="number" id="con-pmt" class="form-control" value="954.20">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Taxa Mensal Declarada (% a.m.)</label>
+          <input type="number" id="con-taxa" class="form-control" value="3.90">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Parcelas Já Pagas</label>
+          <input type="number" id="con-pagas" class="form-control" value="18">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tarifa de Cadastro (TAC/TEC) (R$)</label>
+          <input type="number" id="con-tac" class="form-control" value="650.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Seguro Prestamista (R$)</label>
+          <input type="number" id="con-seguro" class="form-control" value="780.00">
+        </div>
+      </div>
+
+      <div class="btn-toolbar">
+        <button class="btn btn-secondary" onclick="mudarPasso(1)">&larr; Voltar</button>
+        <button class="btn btn-primary" onclick="mudarPasso(3)">Consultar Banco Central &rarr;</button>
+      </div>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div id="step-3" class="wizard-card" style="display: none;">
+      <div class="card-header">
+        <h2 class="card-title">Passo 3: Taxas Oficiais do Banco Central do Brasil</h2>
+        <p class="card-desc">Confronto automático com a taxa média de mercado do BACEN no mês da contratação.</p>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Taxa Efetiva do Contrato</div>
+          <div class="metric-val" id="tx-contrato-val">3,90% a.m.</div>
+          <div class="metric-sub">58,18% ao ano</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Média BACEN (Série 25464)</div>
+          <div class="metric-val" style="color: #059669;" id="tx-bacen-val">1,85% a.m.</div>
+          <div class="metric-sub">24,60% ao ano</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Média Banco do Brasil</div>
+          <div class="metric-val" style="color: #2563eb;">1,92% a.m.</div>
+          <div class="metric-sub">Posição 18º menor taxa</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Disparidade Contratual</div>
+          <div class="metric-val" style="color: #dc2626;" id="tx-razao-val">2,11x</div>
+          <div class="metric-sub">Supera o dobro da média</div>
+        </div>
+      </div>
+
+      <div class="alert-box alert-info">
+        <span><b>Fonte Auditada:</b> Banco Central do Brasil - SGS Série 25464 (Crédito pessoal não consignado - Maio/2023) e Olinda OData v2.</span>
+      </div>
+
+      <div class="btn-toolbar">
+        <button class="btn btn-secondary" onclick="mudarPasso(2)">&larr; Voltar aos Dados</button>
+        <button class="btn btn-success" onclick="executarCalculo()">Executar Recálculo Revisional &rarr;</button>
+      </div>
+    </div>
+
+    <!-- PASSO 4 -->
+    <div id="step-4" style="display: none;">
+      <div id="semaforo-box" class="semaforo-card semaforo-verde">
+        <div class="semaforo-header">
+          <div class="semaforo-dot"></div>
+          <span>ALTA VIABILIDADE REVISIONAL (SEMÁFORO VERDE)</span>
+        </div>
+        <div class="semaforo-desc">
+          A taxa efetiva do contrato (3,90% a.m.) supera <b>2,11x</b> a média de mercado do Banco Central (1,85% a.m.), caracterizando vantagem manifestamente excessiva segundo a jurisprudência dominante do Superior Tribunal de Justiça (STJ). Além disso, foram apurados R$ 1.430,00 em tarifas e seguros impostos de forma abusiva.
+        </div>
+        <div class="semaforo-legal">
+          * Triagem técnica preliminar com base na Súmula 382/STJ, REsp 1.061.530/RS e art. 42 do CDC.
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">Parcela Atual</div>
+          <div class="metric-val" style="color:#64748b;">R$ 954,20</div>
+          <div class="metric-sub">Cobrada em folha/conta</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Nova Parcela (STJ 1,5x)</div>
+          <div class="metric-val" style="color:#059669;" id="res-nova-parcela">R$ 765,10</div>
+          <div class="metric-sub">Economia de R$ 189,10/mês</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Restituição (18 pagas)</div>
+          <div class="metric-val" style="color:#2563eb;" id="res-restituicao">R$ 3.403,80</div>
+          <div class="metric-sub">Repetição do indébito</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Proveito Econômico Total</div>
+          <div class="metric-val" style="color:#1e3a8a;" id="res-proveito">R$ 9.076,80</div>
+          <div class="metric-sub">Restituição + Abatimento Saldo</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Líquido do Cliente</div>
+          <div class="metric-val" style="color:#047857;" id="res-liquido">R$ 7.261,44</div>
+          <div class="metric-sub">Após 20% honorários</div>
+        </div>
+      </div>
+
+      <div class="wizard-card">
+        <div class="card-header">
+          <h2 class="card-title">Quadro Comparativo dos Cenários de Recálculo</h2>
+          <p class="card-desc">Cálculo determinístico via Tabela Price, respeitando as normas contábeis.</p>
+        </div>
+
+        <div class="table-responsive">
+          <table class="cenarios-table">
+            <thead>
+              <tr>
+                <th>Cenário</th>
+                <th>Taxa (% a.m.)</th>
+                <th>Nova Parcela</th>
+                <th>Redução Mensal</th>
+                <th>Restituição (18x)</th>
+                <th>Redução Saldo</th>
+                <th>Proveito Total</th>
+                <th>Líquido Cliente</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>A) Original</b><br><small style="color:#64748b;">Como pactuado</small></td>
+                <td>3,90%</td>
+                <td>R$ 954,20</td>
+                <td>R$ 0,00</td>
+                <td>R$ 0,00</td>
+                <td>R$ 0,00</td>
+                <td>R$ 0,00</td>
+                <td>R$ 0,00</td>
+              </tr>
+              <tr>
+                <td><b>B) Taxa Média</b><br><small style="color:#64748b;">1,0x BACEN</small></td>
+                <td>1,85%</td>
+                <td>R$ 632,45</td>
+                <td><span style="color:#059669;">-R$ 321,75</span></td>
+                <td>R$ 5.791,50</td>
+                <td>R$ 9.652,50</td>
+                <td><b>R$ 15.444,00</b></td>
+                <td><b style="color:#047857;">R$ 12.355,20</b></td>
+              </tr>
+              <tr class="destaque">
+                <td><b>C) Limite STJ</b><br><small style="color:#2563eb;">1,5x BACEN (Tese Forte)</small></td>
+                <td>2,77%</td>
+                <td>R$ 765,10</td>
+                <td><span style="color:#059669;">-R$ 189,10</span></td>
+                <td>R$ 3.403,80</td>
+                <td>R$ 5.673,00</td>
+                <td><b>R$ 9.076,80</b></td>
+                <td><b style="color:#047857;">R$ 7.261,44</b></td>
+              </tr>
+              <tr>
+                <td><b>D) Abusividade 2x</b><br><small style="color:#64748b;">2,0x BACEN</small></td>
+                <td>3,70%</td>
+                <td>R$ 918,30</td>
+                <td><span style="color:#059669;">-R$ 35,90</span></td>
+                <td>R$ 646,20</td>
+                <td>R$ 1.077,00</td>
+                <td><b>R$ 1.723,20</b></td>
+                <td><b style="color:#047857;">R$ 1.378,56</b></td>
+              </tr>
+              <tr>
+                <td><b>E) Expurgo Tarifas</b><br><small style="color:#64748b;">Abatimento TAC + Seguro</small></td>
+                <td>3,90%</td>
+                <td>R$ 885,90</td>
+                <td><span style="color:#059669;">-R$ 68,30</span></td>
+                <td>R$ 1.229,40</td>
+                <td>R$ 2.049,00</td>
+                <td><b>R$ 3.278,40</b></td>
+                <td><b style="color:#047857;">R$ 2.622,72</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bar-chart-container">
+          <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: var(--secondary);">
+            Fluxo de Pagamento Total no Contrato (Original vs. Critério STJ)
+          </h3>
+          <div class="bar-group">
+            <div class="bar-label">
+              <span>Contrato Original (48 parcelas)</span>
+              <span>R$ 45.801,60</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 100%; background: #94a3b8;"></div>
+            </div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label">
+              <span>Recalculado STJ (Cenário C)</span>
+              <span>R$ 36.724,80</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 80.2%; background: #2563eb;"></div>
+            </div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label">
+              <span>Economia Total Prevista</span>
+              <span style="color: #059669;">R$ 9.076,80</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 19.8%; background: #10b981;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-toolbar">
+          <button class="btn btn-secondary" onclick="mudarPasso(3)">&larr; Voltar às Taxas</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="alert('Gerando laudo pericial em PDF via Google Docs e salvando no Google Drive...')">
+              📄 Gerar Relatório em PDF
+            </button>
+            <button class="btn btn-success" onclick="alert('Revisional salva com sucesso! Registro vinculado à aba Revisionais da Planilha.')">
+              💾 Salvar no Processo / Planilha
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="spinner" class="spinner-overlay">
+    <div class="spinner"></div>
+    <div id="sp-txt" style="font-weight: 600;">Processando...</div>
+  </div>
+
+  <script>
+    function mudarPasso(n) {
+      for (let i = 1; i <= 4; i++) {
+        const ind = document.getElementById("step-indicator-" + i);
+        const pane = document.getElementById("step-" + i);
+        if (ind) {
+          ind.classList.remove("active", "completed");
+          if (i === n) ind.classList.add("active");
+          else if (i < n) ind.classList.add("completed");
+        }
+        if (pane) pane.style.display = i === n ? "block" : "none";
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function simularUploadIA() {
+      const sp = document.getElementById("spinner");
+      const txt = document.getElementById("sp-txt");
+      txt.innerText = "Lendo contrato com Google Gemini API e extraindo cláusulas financeiras...";
+      sp.style.display = "flex";
+      setTimeout(() => {
+        sp.style.display = "none";
+        document.getElementById("badge-upload").style.display = "flex";
+      }, 1000);
+    }
+
+    function executarCalculo() {
+      const sp = document.getElementById("spinner");
+      const txt = document.getElementById("sp-txt");
+      txt.innerText = "Executando recálculo determinístico e apurando cenários...";
+      sp.style.display = "flex";
+      setTimeout(() => {
+        sp.style.display = "none";
+        mudarPasso(4);
+      }, 700);
+    }
+  </script>
+</body>
+</html>

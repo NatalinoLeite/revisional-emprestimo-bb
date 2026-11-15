@@ -1,0 +1,311 @@
+<!-- PASSO 1: CLIENTE E PROCESSO -->
+<div id="step-1-content" class="wizard-step-pane">
+  <div class="wizard-card">
+    <div class="card-header">
+      <h2 class="card-title">Passo 1: Identificação do Cliente e Processo</h2>
+      <p class="card-desc">Localize o cliente e o processo cadastrados na planilha ou informe os dados diretamente.</p>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label class="form-label">Pesquisar Cliente ou Processo existente</label>
+      <input type="text" id="busca-cliente-input" class="form-control" placeholder="Digite o nome, CPF ou número do processo..." oninput="filtrarClientesProcessos(this.value)">
+      <div id="busca-sugestoes" style="margin-top: 8px; max-height: 180px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nome do Cliente *</label>
+        <input type="text" id="cliente-nome" class="form-control" placeholder="Ex.: João Carlos de Souza" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">CPF / CNPJ</label>
+        <input type="text" id="cliente-cpf" class="form-control" placeholder="000.000.000-00">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ID do Cliente (Planilha)</label>
+        <input type="text" id="cliente-id" class="form-control" placeholder="CLI-001 (opcional)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Número do Processo Judicial</label>
+        <input type="text" id="processo-numero" class="form-control" placeholder="0000000-00.2024.8.26.0100 (opcional)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ID do Processo (Planilha)</label>
+        <input type="text" id="processo-id" class="form-control" placeholder="PROC-001 (opcional)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Renda Líquida Mensal (R$)</label>
+        <input type="number" step="0.01" id="cliente-renda" class="form-control" placeholder="R$ 0,00 (para análise de superendividamento)">
+      </div>
+    </div>
+
+    <div class="btn-toolbar">
+      <div></div>
+      <button type="button" class="btn btn-primary" onclick="avancarPasso(1)">
+        Continuar para o Contrato &rarr;
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSO 2: CONTRATO (UPLOAD + IA + EDIÇÃO) -->
+<div id="step-2-content" class="wizard-step-pane" style="display: none;">
+  <div class="wizard-card">
+    <div class="card-header">
+      <h2 class="card-title">Passo 2: Extração e Conferência dos Dados do Contrato</h2>
+      <p class="card-desc">Faça upload do contrato em PDF ou imagem para leitura com IA, ou preencha manualmente os campos abaixo.</p>
+    </div>
+
+    <!-- Área de Drag & Drop -->
+    <div class="upload-area" id="drop-area" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📄</div>
+      <div class="upload-text">Arraste e solte o contrato (PDF ou imagem) aqui</div>
+      <div class="upload-subtext">ou clique para selecionar do computador (Tamanho máximo: 15MB)</div>
+      <input type="file" id="file-input" accept="application/pdf,image/*" style="display: none;" onchange="aoSelecionarArquivo(event)">
+    </div>
+
+    <div id="arquivo-carregado-badge" style="display: none;" class="alert-box alert-info">
+      <span id="arquivo-nome-label"></span>
+    </div>
+
+    <div id="ia-alertas-container" style="display: none;"></div>
+
+    <div class="card-header" style="margin-top: 24px;">
+      <h3 class="card-title" style="font-size: 1rem;">Dados Contratuais (Confirmar e Editar)</h3>
+      <p class="card-desc">O advogado deve validar os valores antes de rodar o cálculo determinístico.</p>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Instituição Financeira (Banco) *</label>
+        <input type="text" id="contrato-banco" class="form-control" value="BCO DO BRASIL S.A.">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Modalidade de Crédito *</label>
+        <input type="text" id="contrato-modalidade" class="form-control" value="Crédito pessoal não consignado - Prefixado">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nº do Contrato / Operação</label>
+        <input type="text" id="contrato-numero" class="form-control" placeholder="Ex.: 987654321">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Data da Contratação *</label>
+        <input type="date" id="contrato-data" class="form-control" required onchange="aoMudarDataContrato()">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Data do Primeiro Vencimento</label>
+        <input type="date" id="contrato-data-primeira" class="form-control">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Valor Liberado Líquido (R$) *</label>
+        <input type="number" step="0.01" id="contrato-valor-liberado" class="form-control" placeholder="Ex.: 25000.00" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Prazo Total (meses) *</label>
+        <input type="number" id="contrato-prazo" class="form-control" placeholder="Ex.: 48 ou 60" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Valor da Parcela Atual (R$) *</label>
+        <input type="number" step="0.01" id="contrato-valor-parcela" class="form-control" placeholder="Ex.: 950.40" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Taxa Mensal Declarada (% a.m.)</label>
+        <input type="number" step="0.01" id="contrato-taxa-mensal" class="form-control" placeholder="Ex.: 3.45">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Taxa Anual Declarada (% a.a.)</label>
+        <input type="number" step="0.01" id="contrato-taxa-anual" class="form-control" placeholder="Ex.: 50.17">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Parcelas Já Pagas (Quitadas)</label>
+        <input type="number" id="contrato-parcelas-pagas" class="form-control" value="0">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tarifa de Cadastro / TAC (R$)</label>
+        <input type="number" step="0.01" id="contrato-tarifa-cadastro" class="form-control" value="0">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Seguro Prestamista (R$)</label>
+        <input type="number" step="0.01" id="contrato-seguro" class="form-control" value="0">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Outras Tarifas / Avaliação (R$)</label>
+        <input type="number" step="0.01" id="contrato-outras-tarifas" class="form-control" value="0">
+      </div>
+    </div>
+
+    <div class="btn-toolbar">
+      <button type="button" class="btn btn-secondary" onclick="voltarPasso(2)">&larr; Voltar</button>
+      <button type="button" class="btn btn-primary" onclick="avancarPasso(2)">
+        Consultar Taxas no Banco Central &rarr;
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSO 3: TAXAS BANCO CENTRAL -->
+<div id="step-3-content" class="wizard-step-pane" style="display: none;">
+  <div class="wizard-card">
+    <div class="card-header">
+      <h2 class="card-title">Passo 3: Taxas Oficiais do Banco Central do Brasil</h2>
+      <p class="card-desc">Confronto entre a taxa contratual e os parâmetros oficiais do mercado no mês da contratação.</p>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Taxa Efetiva Contrato</div>
+        <div class="metric-val" id="taxa-contrato-badge">--%</div>
+        <div class="metric-sub">Calculada numericamente</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Média de Mercado (BACEN)</div>
+        <div class="metric-val" id="taxa-mercado-badge" style="color: #059669;">--%</div>
+        <div class="metric-sub" id="taxa-mercado-fonte">Consultando...</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Média Banco do Brasil</div>
+        <div class="metric-val" id="taxa-bb-badge" style="color: #2563eb;">--%</div>
+        <div class="metric-sub" id="taxa-bb-ranking">Posição no ranking: --</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Relação Contrato / Média</div>
+        <div class="metric-val" id="taxa-razao-badge">--x</div>
+        <div class="metric-sub" id="taxa-razao-status">Analisando abusividade...</div>
+      </div>
+    </div>
+
+    <div class="alert-box alert-info" id="bcb-fonte-info">
+      <span><b>Fonte Oficial:</b> <span id="bcb-fonte-desc">Aguardando consulta...</span></span>
+    </div>
+
+    <div class="card-header" style="margin-top: 20px;">
+      <h3 class="card-title" style="font-size: 1rem;">Ajuste ou Fallback Manual (Se necessário)</h3>
+      <p class="card-desc">Caso a API do BCB esteja temporariamente indisponível ou queira simular outra taxa:</p>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Taxa Média de Mercado Manual (% a.m.)</label>
+        <input type="number" step="0.01" id="bcb-taxa-manual" class="form-control" placeholder="Deixe em branco para usar a API oficial">
+      </div>
+      <div class="form-group" style="justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="reconsultarTaxasBCB()">
+          🔄 Atualizar / Reconsultar BCB
+        </button>
+      </div>
+    </div>
+
+    <div class="btn-toolbar">
+      <button type="button" class="btn btn-secondary" onclick="voltarPasso(3)">&larr; Voltar aos Dados</button>
+      <button type="button" class="btn btn-success" onclick="avancarPasso(3)">
+        Executar Recálculo Revisional &rarr;
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSO 4: RESULTADO COMPLETO -->
+<div id="step-4-content" class="wizard-step-pane" style="display: none;">
+  <!-- Card Semáforo -->
+  <div id="resultado-semaforo-container"></div>
+
+  <!-- Métricas Rápidas -->
+  <div class="metrics-grid" id="resultado-metricas-container"></div>
+
+  <!-- Alerta de Comprometimento de Renda -->
+  <div id="resultado-renda-alerta" style="display: none;"></div>
+
+  <!-- Tabela Comparativa de Cenários -->
+  <div class="wizard-card">
+    <div class="card-header">
+      <h2 class="card-title">Comparativo dos Cenários de Recálculo</h2>
+      <p class="card-desc">Cálculos estritamente determinísticos, com Tabela Price e expurgo de tarifas.</p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="cenarios-table" id="tabela-cenarios">
+        <thead>
+          <tr>
+            <th>Cenário</th>
+            <th>Taxa (% a.m.)</th>
+            <th>Nova Parcela</th>
+            <th>Redução Mensal</th>
+            <th>Restituição (Pagas)</th>
+            <th>Redução Saldo</th>
+            <th>Proveito Estimado</th>
+            <th>Líquido Cliente</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-cenarios-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Gráfico em Barras CSS -->
+    <div class="bar-chart-container">
+      <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: var(--secondary);">
+        Comparativo Financeiro: Total Pago no Contrato (Original vs. Cenário STJ)
+      </h3>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span>Contrato Original</span>
+          <span id="grafico-label-original">R$ 0,00</span>
+        </div>
+        <div class="bar-track">
+          <div id="grafico-barra-original" class="bar-fill" style="width: 100%; background: #94a3b8;"></div>
+        </div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span>Recalculado (Critério STJ 1,5x)</span>
+          <span id="grafico-label-recalculado">R$ 0,00</span>
+        </div>
+        <div class="bar-track">
+          <div id="grafico-barra-recalculado" class="bar-fill" style="width: 70%; background: #2563eb;"></div>
+        </div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label">
+          <span>Economia Total Projetada</span>
+          <span id="grafico-label-economia" style="color: #059669;">R$ 0,00</span>
+        </div>
+        <div class="bar-track">
+          <div id="grafico-barra-economia" class="bar-fill" style="width: 30%; background: #10b981;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ações Finais -->
+    <div class="btn-toolbar">
+      <button type="button" class="btn btn-secondary" onclick="voltarPasso(4)">&larr; Voltar às Taxas</button>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-primary" onclick="gerarRelatorioPDF()">
+          📄 Gerar Relatório em PDF
+        </button>
+        <button type="button" class="btn btn-success" onclick="salvarRevisionalNoProcesso()">
+          💾 Salvar na Planilha / Processo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

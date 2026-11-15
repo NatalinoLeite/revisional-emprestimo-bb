@@ -1,0 +1,616 @@
+<script>
+  // Estado Global da Aplicação no Frontend
+  const appState = {
+    passoAtual: 1,
+    cliente: {},
+    dadosContrato: {},
+    taxasBCB: {},
+    resultadoCalculo: null,
+    arquivoContrato: null
+  };
+
+  // Inicialização ao carregar a página
+  document.addEventListener("DOMContentLoaded", function() {
+    configurarDragAndDrop();
+    definirDataPadrao();
+  });
+
+  function definirDataPadrao() {
+    const hoje = new Date().toISOString().split("T")[0];
+    const dataInput = document.getElementById("contrato-data");
+    if (dataInput && !dataInput.value) {
+      dataInput.value = hoje;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Navegação do Stepper
+  // -------------------------------------------------------------
+  function atualizarStepper(novoPasso) {
+    appState.passoAtual = novoPasso;
+    for (let i = 1; i <= 4; i++) {
+      const stepElem = document.getElementById("step-indicator-" + i);
+      const paneElem = document.getElementById("step-" + i + "-content");
+      if (stepElem) {
+        stepElem.classList.remove("active", "completed");
+        if (i === novoPasso) stepElem.classList.add("active");
+        else if (i < novoPasso) stepElem.classList.add("completed");
+      }
+      if (paneElem) {
+        paneElem.style.display = i === novoPasso ? "block" : "none";
+      }
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function avancarPasso(passoAtual) {
+    if (passoAtual === 1) {
+      const nome = document.getElementById("cliente-nome").value.trim();
+      if (!nome) {
+        alert("Por favor, informe ao menos o nome do cliente.");
+        return;
+      }
+      appState.cliente = {
+        nome: nome,
+        cpf: document.getElementById("cliente-cpf").value.trim(),
+        id: document.getElementById("cliente-id").value.trim(),
+        numeroProcesso: document.getElementById("processo-numero").value.trim(),
+        processoId: document.getElementById("processo-id").value.trim(),
+        renda: parseFloat(document.getElementById("cliente-renda").value) || 0
+      };
+      atualizarStepper(2);
+    } else if (passoAtual === 2) {
+      // Validação dos dados do contrato antes do cálculo
+      const valorLiberado = parseFloat(document.getElementById("contrato-valor-liberado").value) || 0;
+      const prazo = parseInt(document.getElementById("contrato-prazo").value, 10) || 0;
+      const valorParcela = parseFloat(document.getElementById("contrato-valor-parcela").value) || 0;
+      const dataContrato = document.getElementById("contrato-data").value;
+
+      if (valorLiberado <= 0 || prazo <= 0 || valorParcela <= 0 || !dataContrato) {
+        alert("Preencha os campos obrigatórios (*): Valor Liberado, Prazo, Parcela e Data do Contrato.");
+        return;
+      }
+
+      appState.dadosContrato = {
+        banco: document.getElementById("contrato-banco").value.trim(),
+        modalidade: document.getElementById("contrato-modalidade").value.trim(),
+        numeroContrato: document.getElementById("contrato-numero").value.trim(),
+        dataContrato: dataContrato,
+        dataPrimeiraParcela: document.getElementById("contrato-data-primeira").value || dataContrato,
+        valorLiberado: valorLiberado,
+        prazo: prazo,
+        valorParcela: valorParcela,
+        taxaMensalContrato: parseFloat(document.getElementById("contrato-taxa-mensal").value) || 0,
+        taxaAnualContrato: parseFloat(document.getElementById("contrato-taxa-anual").value) || 0,
+        parcelasPagas: parseInt(document.getElementById("contrato-parcelas-pagas").value, 10) || 0,
+        tarifaCadastro: parseFloat(document.getElementById("contrato-tarifa-cadastro").value) || 0,
+        seguroPrestamista: parseFloat(document.getElementById("contrato-seguro").value) || 0,
+        outrasTarifas: parseFloat(document.getElementById("contrato-outras-tarifas").value) || 0,
+        rendaLiquida: appState.cliente.renda || 0
+      };
+
+      atualizarStepper(3);
+      consultarTaxasBCB();
+    } else if (passoAtual === 3) {
+      atualizarStepper(4);
+      executarRecalculoFinal();
+    }
+  }
+
+  function voltarPasso(passoAtual) {
+    if (passoAtual > 1) {
+      atualizarStepper(passoAtual - 1);
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Passo 1: Busca de Clientes/Processos na Planilha
+  // -------------------------------------------------------------
+  function filtrarClientesProcessos(termo) {
+    if (!termo || termo.length < 2) {
+      document.getElementById("busca-sugestoes").innerHTML = "";
+      return;
+    }
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          renderizarSugestoesBusca(res);
+        })
+        .buscarClientesEProcessos(termo);
+    }
+  }
+
+  function renderizarSugestoesBusca(res) {
+    const container = document.getElementById("busca-sugestoes");
+    if (!container) return;
+
+    if ((!res.clientes || res.clientes.length === 0) && (!res.processos || res.processos.length === 0)) {
+      container.innerHTML = "<div style='font-size:0.8rem; color:#64748b; padding:4px;'>Nenhum registro encontrado na planilha.</div>";
+      return;
+    }
+
+    let html = "<div style='background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:6px; box-shadow:var(--shadow-md);'>";
+    (res.clientes || []).forEach(function(c) {
+      html += "<div style='padding:6px 8px; cursor:pointer; border-bottom:1px solid #f1f5f9; font-size:0.85rem;' onclick='selecionarClienteSugestao(" + JSON.stringify(c) + ")'>" +
+              "👤 <b>" + c.nome + "</b> (" + (c.cpfCnpj || "Sem CPF") + ")</div>";
+    });
+    (res.processos || []).forEach(function(p) {
+      html += "<div style='padding:6px 8px; cursor:pointer; font-size:0.85rem;' onclick='selecionarProcessoSugestao(" + JSON.stringify(p) + ")'>" +
+              "⚖️ Processo: <b>" + p.numeroProcesso + "</b> (" + p.banco + ")</div>";
+    });
+    html += "</div>";
+    container.innerHTML = html;
+  }
+
+  function selecionarClienteSugestao(c) {
+    document.getElementById("cliente-nome").value = c.nome;
+    document.getElementById("cliente-cpf").value = c.cpfCnpj || "";
+    document.getElementById("cliente-id").value = c.id || "";
+    if (c.rendaDeclarada) document.getElementById("cliente-renda").value = c.rendaDeclarada;
+    document.getElementById("busca-sugestoes").innerHTML = "";
+  }
+
+  function selecionarProcessoSugestao(p) {
+    document.getElementById("processo-numero").value = p.numeroProcesso;
+    document.getElementById("processo-id").value = p.id;
+    if (p.clienteId) document.getElementById("cliente-id").value = p.clienteId;
+    document.getElementById("busca-sugestoes").innerHTML = "";
+  }
+
+  // -------------------------------------------------------------
+  // Passo 2: Upload de Contrato e Leitura com IA
+  // -------------------------------------------------------------
+  function configurarDragAndDrop() {
+    const dropArea = document.getElementById("drop-area");
+    if (!dropArea) return;
+
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+      dropArea.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropArea.addEventListener(eventName, () => dropArea.classList.add("dragover"), false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+      dropArea.addEventListener(eventName, () => dropArea.classList.remove("dragover"), false);
+    });
+
+    dropArea.addEventListener("drop", e => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) processarArquivo(files[0]);
+    }, false);
+  }
+
+  function aoSelecionarArquivo(e) {
+    const file = e.target.files[0];
+    if (file) processarArquivo(file);
+  }
+
+  function processarArquivo(file) {
+    if (file.size > 15 * 1024 * 1024) {
+      alert("O arquivo é maior que o limite de 15MB.");
+      return;
+    }
+
+    exibirSpinner("Enviando documento e extraindo cláusulas com Gemini IA...");
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const base64Data = e.target.result.split(",")[1];
+      const payload = {
+        arquivoBase64: base64Data,
+        nomeArquivo: file.name,
+        mimeType: file.type || "application/pdf",
+        clienteNome: appState.cliente.nome || "Cliente"
+      };
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            ocultarSpinner();
+            if (res.sucesso) {
+              aplicarExtracaoNoFormulario(res);
+            } else {
+              alert("Erro na extração: " + res.mensagem);
+            }
+          })
+          .withFailureHandler(function(err) {
+            ocultarSpinner();
+            alert("Falha na comunicação com o servidor: " + err.message);
+          })
+          .apiUploadEExtrairContrato(payload);
+      } else {
+        // Simulação caso execute localmente fora do GAS
+        setTimeout(function() {
+          ocultarSpinner();
+          alert("Modo de teste: formulário preenchido com dados simulados.");
+          aplicarExtracaoNoFormulario({
+            sucesso: true,
+            arquivoDrive: { nome: file.name },
+            dadosExtraidos: {
+              banco: "BCO DO BRASIL S.A.",
+              modalidade: "Crédito pessoal não consignado - Prefixado",
+              dataContrato: "2024-01-15",
+              dataPrimeiraParcela: "2024-02-15",
+              valorLiberado: 10000.0,
+              prazo: 24,
+              valorParcela: 590.47,
+              taxaMensalContrato: 3.0,
+              taxaAnualContrato: 42.58,
+              tarifaCadastro: 400.0,
+              seguroPrestamista: 350.0
+            },
+            alertas: []
+          });
+        }, 1200);
+      }
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function aplicarExtracaoNoFormulario(res) {
+    const d = res.dadosExtraidos;
+    if (!d) return;
+
+    if (d.banco) document.getElementById("contrato-banco").value = d.banco;
+    if (d.modalidade) document.getElementById("contrato-modalidade").value = d.modalidade;
+    if (d.numeroContrato) document.getElementById("contrato-numero").value = d.numeroContrato;
+    if (d.dataContrato) document.getElementById("contrato-data").value = d.dataContrato;
+    if (d.dataPrimeiraParcela) document.getElementById("contrato-data-primeira").value = d.dataPrimeiraParcela;
+    if (d.valorLiberado) document.getElementById("contrato-valor-liberado").value = d.valorLiberado;
+    if (d.prazo) document.getElementById("contrato-prazo").value = d.prazo;
+    if (d.valorParcela) document.getElementById("contrato-valor-parcela").value = d.valorParcela;
+    if (d.taxaMensalContrato) document.getElementById("contrato-taxa-mensal").value = d.taxaMensalContrato;
+    if (d.taxaAnualContrato) document.getElementById("contrato-taxa-anual").value = d.taxaAnualContrato;
+    if (d.tarifaCadastro) document.getElementById("contrato-tarifa-cadastro").value = d.tarifaCadastro;
+    if (d.seguroPrestamista) document.getElementById("contrato-seguro").value = d.seguroPrestamista;
+    if (d.outrasTarifas) document.getElementById("contrato-outras-tarifas").value = d.outrasTarifas;
+
+    // Badge do arquivo
+    const badge = document.getElementById("arquivo-carregado-badge");
+    const label = document.getElementById("arquivo-nome-label");
+    badge.style.display = "flex";
+    label.innerHTML = "✅ Documento analisado pela IA: <b>" + (res.arquivoDrive ? res.arquivoDrive.nome : "Contrato") + "</b>";
+
+    // Alertas de IA
+    const containerAlertas = document.getElementById("ia-alertas-container");
+    if (res.alertas && res.alertas.length > 0) {
+      containerAlertas.style.display = "block";
+      let htmlAlertas = "<div class='alert-box alert-warning'><div><b>Avisos da análise documental:</b><ul style='margin-left:20px;'>";
+      res.alertas.forEach(a => htmlAlertas += "<li>" + a + "</li>");
+      htmlAlertas += "</ul></div></div>";
+      containerAlertas.innerHTML = htmlAlertas;
+    } else {
+      containerAlertas.style.display = "none";
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Passo 3: Consulta ao Banco Central
+  // -------------------------------------------------------------
+  function consultarTaxasBCB() {
+    const dc = appState.dadosContrato;
+    exibirSpinner("Consultando taxas oficiais no Banco Central (SGS e Olinda)...");
+
+    const params = {
+      dataContrato: dc.dataContrato,
+      modalidade: dc.modalidade,
+      instituicao: dc.banco,
+      fallbackTaxaManual: parseFloat(document.getElementById("bcb-taxa-manual").value) || undefined
+    };
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          ocultarSpinner();
+          if (res.sucesso) {
+            renderizarPainelBCB(res.dados);
+          } else {
+            alert("Erro na consulta do Banco Central: " + res.mensagem);
+          }
+        })
+        .withFailureHandler(function(err) {
+          ocultarSpinner();
+          alert("Falha na chamada do BCB: " + err.message);
+        })
+        .apiConsultarTaxasBCB(params);
+    } else {
+      // Simulação local para testes rápidos
+      setTimeout(function() {
+        ocultarSpinner();
+        renderizarPainelBCB({
+          taxaMediaMercadoMensal: 5.50,
+          taxaMediaMercadoAnual: 90.12,
+          taxaBancoMensal: 4.00,
+          posicaoRankingBanco: 43,
+          fonte: "Banco Central do Brasil - SGS Série 25464"
+        });
+      }, 800);
+    }
+  }
+
+  function reconsultarTaxasBCB() {
+    consultarTaxasBCB();
+  }
+
+  function renderizarPainelBCB(taxas) {
+    appState.taxasBCB = taxas;
+    const dc = appState.dadosContrato;
+
+    // Calcula taxa implícita aproximada
+    const taxaContrato = dc.taxaMensalContrato || 3.0;
+    const taxaMercado = taxas.taxaMediaMercadoMensal || 5.5;
+    const taxaBB = taxas.taxaBancoMensal || taxas.taxaMediaMercadoMensal;
+    const razao = taxaMercado > 0 ? taxaContrato / taxaMercado : 1.0;
+
+    document.getElementById("taxa-contrato-badge").innerText = taxaContrato.toFixed(2) + "% a.m.";
+    document.getElementById("taxa-mercado-badge").innerText = taxaMercado.toFixed(2) + "% a.m.";
+    document.getElementById("taxa-mercado-fonte").innerText = taxas.fonte ? taxas.fonte.substring(0, 32) + "..." : "SGS/BACEN";
+    document.getElementById("taxa-bb-badge").innerText = taxaBB.toFixed(2) + "% a.m.";
+    document.getElementById("taxa-bb-ranking").innerText = taxas.posicaoRankingBanco ? "Posição: " + taxas.posicaoRankingBanco + "º menor taxa" : "Instituição referenciada";
+    document.getElementById("taxa-razao-badge").innerText = razao.toFixed(2) + "x";
+
+    if (razao >= 2.0) {
+      document.getElementById("taxa-razao-status").innerText = "Abusividade manifesta (>= 2x)";
+      document.getElementById("taxa-razao-status").style.color = "#dc2626";
+    } else if (razao >= 1.5) {
+      document.getElementById("taxa-razao-status").innerText = "Faixa de revisão STJ (1.5x a 2x)";
+      document.getElementById("taxa-razao-status").style.color = "#d97706";
+    } else {
+      document.getElementById("taxa-razao-status").innerText = "Dentro do padrão (< 1.5x)";
+      document.getElementById("taxa-razao-status").style.color = "#16a34a";
+    }
+
+    document.getElementById("bcb-fonte-desc").innerText = taxas.fonte || "Banco Central do Brasil";
+  }
+
+  // -------------------------------------------------------------
+  // Passo 4: Recálculo Determinístico e Apresentação
+  // -------------------------------------------------------------
+  function executarRecalculoFinal() {
+    const dc = appState.dadosContrato;
+    const tx = appState.taxasBCB;
+    exibirSpinner("Executando recálculo determinístico e apuração de cenários...");
+
+    const payload = {
+      valorLiberado: dc.valorLiberado,
+      prazo: dc.prazo,
+      valorParcela: dc.valorParcela,
+      taxaMensalContrato: dc.taxaMensalContrato,
+      taxaMediaMercado: tx.taxaMediaMercadoMensal || 5.5,
+      parcelasPagas: dc.parcelasPagas,
+      tarifas: dc.tarifaCadastro + dc.outrasTarifas,
+      seguro: dc.seguroPrestamista,
+      rendaLiquida: dc.rendaLiquida,
+      dataContrato: dc.dataContrato,
+      dataPrimeiraParcela: dc.dataPrimeiraParcela
+    };
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          ocultarSpinner();
+          if (res.sucesso) {
+            appState.resultadoCalculo = res.resultado;
+            renderizarResultadoFinal(res.resultado);
+          } else {
+            alert("Erro no recálculo: " + res.mensagem);
+          }
+        })
+        .withFailureHandler(function(err) {
+          ocultarSpinner();
+          alert("Falha no servidor: " + err.message);
+        })
+        .apiExecutarCalculoRevisional(payload);
+    } else {
+      // Simulação local em modo dev
+      setTimeout(function() {
+        ocultarSpinner();
+        const mockRes = {
+          dadosContrato: { valorLiberado: 10000, prazo: 24, valorParcela: 590.47, taxaImplicitaMensal: 3.0, taxaMediaBCBMensal: 1.5, razaoTaxaMercado: 2.0 },
+          semaforo: { cor: "VERDE", titulo: "Alta Viabilidade Revisional", explicacao: "A taxa praticada supera 2.0x a média de mercado do Banco Central.", avisoLegal: "Triagem para fins de assessoria jurídica." },
+          cenarios: {
+            A: { nome: "Original", taxaAplicadaMensal: 3.0, novaParcela: 590.47, reducaoParcela: 0, indebitoAplicado: 0, reducaoSaldoDevedor: 0, proveitoTotalEstimado: 0, liquidoCliente: 0, totalDevidoContrato: 14171.28 },
+            B: { nome: "Média Mercado (1.0x)", taxaAplicadaMensal: 1.5, novaParcela: 499.24, reducaoParcela: 91.23, indebitoAplicado: 1094.76, reducaoSaldoDevedor: 1094.76, proveitoTotalEstimado: 2189.52, liquidoCliente: 1751.62, totalDevidoContrato: 11981.76 },
+            C: { nome: "Critério STJ (1.5x)", taxaAplicadaMensal: 2.25, novaParcela: 543.71, reducaoParcela: 46.76, indebitoAplicado: 561.12, reducaoSaldoDevedor: 561.12, proveitoTotalEstimado: 1122.24, liquidoCliente: 897.79, totalDevidoContrato: 13049.04 }
+          },
+          resumoExecutivo: { novaParcela: 543.71, reducaoParcela: 46.76, restituicaoEstimada: 561.12, proveitoEconomicoTotal: 1122.24, liquidoClienteAposHonorarios: 897.79 }
+        };
+        appState.resultadoCalculo = mockRes;
+        renderizarResultadoFinal(mockRes);
+      }, 600);
+    }
+  }
+
+  function renderizarResultadoFinal(res) {
+    const sem = res.semaforo;
+    const cC = res.cenarios.C || res.cenarios.B;
+    const cOrig = res.cenarios.A;
+
+    // 1. Semáforo
+    const semClasse = "semaforo-" + sem.cor.toLowerCase();
+    const semHtml = 
+      "<div class='semaforo-card " + semClasse + "'>" +
+        "<div class='semaforo-header'>" +
+          "<div class='semaforo-dot'></div>" +
+          "<span>" + sem.titulo + "</span>" +
+        "</div>" +
+        "<div class='semaforo-desc'>" + sem.explicacao + "</div>" +
+        "<div class='semaforo-legal'>* " + sem.avisoLegal + "</div>" +
+      "</div>";
+    document.getElementById("resultado-semaforo-container").innerHTML = semHtml;
+
+    // 2. Métricas Rápidas
+    const metricasHtml = 
+      "<div class='metric-card'>" +
+        "<div class='metric-label'>Parcela Atual</div>" +
+        "<div class='metric-val' style='color:#64748b;'>" + formatarMoeda(cOrig.novaParcela) + "</div>" +
+        "<div class='metric-sub'>Cobrada pelo Banco</div>" +
+      "</div>" +
+      "<div class='metric-card'>" +
+        "<div class='metric-label'>Nova Parcela (STJ 1,5x)</div>" +
+        "<div class='metric-val' style='color:#059669;'>" + formatarMoeda(cC.novaParcela) + "</div>" +
+        "<div class='metric-sub'>Economia de " + formatarMoeda(cC.reducaoParcela) + "/mês</div>" +
+      "</div>" +
+      "<div class='metric-card'>" +
+        "<div class='metric-label'>Restituição Estimada</div>" +
+        "<div class='metric-val' style='color:#2563eb;'>" + formatarMoeda(cC.indebitoAplicado) + "</div>" +
+        "<div class='metric-sub'>Sobre " + cC.parcelasPagas + " parcelas pagas</div>" +
+      "</div>" +
+      "<div class='metric-card'>" +
+        "<div class='metric-label'>Proveito Econômico Total</div>" +
+        "<div class='metric-val' style='color:#1e3a8a;'>" + formatarMoeda(cC.proveitoTotalEstimado) + "</div>" +
+        "<div class='metric-sub'>Restituição + Abatimento Saldo</div>" +
+      "</div>" +
+      "<div class='metric-card'>" +
+        "<div class='metric-label'>Líquido do Cliente</div>" +
+        "<div class='metric-val' style='color:#047857;'>" + formatarMoeda(cC.liquidoCliente) + "</div>" +
+        "<div class='metric-sub'>Após honorários contratuais</div>" +
+      "</div>";
+    document.getElementById("resultado-metricas-container").innerHTML = metricasHtml;
+
+    // 3. Alerta de Comprometimento de Renda
+    const rendaBox = document.getElementById("resultado-renda-alerta");
+    if (res.alertaComprometimento && res.alertaComprometimento.ultrapassouLimite) {
+      rendaBox.style.display = "block";
+      rendaBox.innerHTML = 
+        "<div class='alert-box alert-warning'>" +
+          "<span>⚠️ " + res.alertaComprometimento.mensagem + "</span>" +
+        "</div>";
+    } else {
+      rendaBox.style.display = "none";
+    }
+
+    // 4. Tabela de Cenários
+    const tbody = document.getElementById("tabela-cenarios-body");
+    let linhasHtml = "";
+    Object.keys(res.cenarios).forEach(key => {
+      const c = res.cenarios[key];
+      const isDestaque = key === "C";
+      linhasHtml += 
+        "<tr class='" + (isDestaque ? "destaque" : "") + "'>" +
+          "<td><b>Cenário " + key + "</b><br><small style='color:#64748b;'>" + c.nome + "</small></td>" +
+          "<td>" + c.taxaAplicadaMensal.toFixed(2) + "% a.m.</td>" +
+          "<td><b>" + formatarMoeda(c.novaParcela) + "</b></td>" +
+          "<td style='color:#059669;'>-" + formatarMoeda(c.reducaoParcela) + "</td>" +
+          "<td>" + formatarMoeda(c.indebitoAplicado) + "</td>" +
+          "<td>" + formatarMoeda(c.reducaoSaldoDevedor) + "</td>" +
+          "<td><b>" + formatarMoeda(c.proveitoTotalEstimado) + "</b></td>" +
+          "<td style='color:#047857;'><b>" + formatarMoeda(c.liquidoCliente) + "</b></td>" +
+        "</tr>";
+    });
+    tbody.innerHTML = linhasHtml;
+
+    // 5. Gráficos de Barra
+    const totalOrig = cOrig.totalDevidoContrato || 1;
+    const totalRecalc = cC.totalDevidoContrato || 1;
+    const economia = Math.max(0, totalOrig - totalRecalc);
+    const percRecalc = Math.max(10, Math.min(100, (totalRecalc / totalOrig) * 100));
+    const percEcon = Math.max(5, Math.min(100, (economia / totalOrig) * 100));
+
+    document.getElementById("grafico-label-original").innerText = formatarMoeda(totalOrig);
+    document.getElementById("grafico-label-recalculado").innerText = formatarMoeda(totalRecalc);
+    document.getElementById("grafico-label-economia").innerText = formatarMoeda(economia);
+
+    document.getElementById("grafico-barra-recalculado").style.width = percRecalc.toFixed(1) + "%";
+    document.getElementById("grafico-barra-economia").style.width = percEcon.toFixed(1) + "%";
+  }
+
+  // -------------------------------------------------------------
+  // Ações de Salvar e Relatório
+  // -------------------------------------------------------------
+  function salvarRevisionalNoProcesso() {
+    if (!appState.resultadoCalculo) {
+      alert("Nenhum cálculo disponível para salvar.");
+      return;
+    }
+
+    exibirSpinner("Salvando revisional na planilha...");
+    const payload = Object.assign({}, appState.dadosContrato, {
+      clienteId: appState.cliente.id,
+      processoId: appState.cliente.processoId,
+      resultado: appState.resultadoCalculo
+    });
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          ocultarSpinner();
+          if (res.sucesso) {
+            alert("✅ Revisional registrada com sucesso! ID: " + res.idRevisional);
+          } else {
+            alert("Erro ao salvar: " + res.mensagem);
+          }
+        })
+        .apiSalvarRevisional(payload);
+    } else {
+      setTimeout(function() {
+        ocultarSpinner();
+        alert("✅ Simulação: Revisional salva com sucesso!");
+      }, 500);
+    }
+  }
+
+  function gerarRelatorioPDF() {
+    if (!appState.resultadoCalculo) {
+      alert("Execute o cálculo antes de gerar o relatório.");
+      return;
+    }
+
+    exibirSpinner("Gerando relatório em PDF e salvando no Google Drive...");
+    const payload = {
+      cliente: appState.cliente,
+      dadosContrato: appState.dadosContrato,
+      resultado: appState.resultadoCalculo
+    };
+
+    if (typeof google !== "undefined" && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          ocultarSpinner();
+          if (res.sucesso) {
+            window.open(res.pdfUrl, "_blank");
+          } else {
+            alert("Erro ao gerar PDF: " + res.mensagem);
+          }
+        })
+        .withFailureHandler(function(err) {
+          ocultarSpinner();
+          alert("Falha na geração do relatório: " + err.message);
+        })
+        .apiGerarRelatorioPDF(payload);
+    } else {
+      setTimeout(function() {
+        ocultarSpinner();
+        alert("Modo de teste: o PDF será gerado quando implantado no Google Apps Script.");
+      }, 600);
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Helpers Visuais e Formatação
+  // -------------------------------------------------------------
+  function formatarMoeda(valor) {
+    const num = Number(valor) || 0;
+    return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function exibirSpinner(texto) {
+    const overlay = document.getElementById("spinner-overlay");
+    const txt = document.getElementById("spinner-text");
+    if (txt) txt.innerText = texto || "Processando...";
+    if (overlay) overlay.style.display = "flex";
+  }
+
+  function ocultarSpinner() {
+    const overlay = document.getElementById("spinner-overlay");
+    if (overlay) overlay.style.display = "none";
+  }
+</script>

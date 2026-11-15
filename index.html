@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Revisional de Empréstimos Bancários | Banco do Brasil</title>
+  <?!= include('css'); ?>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Principal -->
+    <header class="app-header">
+      <div class="app-title">
+        <span>⚖️ Revisional de Empréstimos</span>
+        <span class="app-badge">BB Crédito Salário</span>
+      </div>
+      <div class="user-badge">
+        Operador: <b><?= usuario.nome ?></b> (<?= usuario.perfil ?>)
+      </div>
+    </header>
+
+    <!-- Barra de Progresso / Stepper -->
+    <nav class="stepper" aria-label="Progresso do Cálculo">
+      <div class="step-item active" id="step-indicator-1" onclick="atualizarStepper(1)">
+        <div class="step-number">1</div>
+        <span>Cliente & Processo</span>
+      </div>
+      <div class="step-item" id="step-indicator-2" onclick="atualizarStepper(2)">
+        <div class="step-number">2</div>
+        <span>Contrato & IA</span>
+      </div>
+      <div class="step-item" id="step-indicator-3" onclick="atualizarStepper(3)">
+        <div class="step-number">3</div>
+        <span>Taxas BACEN</span>
+      </div>
+      <div class="step-item" id="step-indicator-4">
+        <div class="step-number">4</div>
+        <span>Resultado & Viabilidade</span>
+      </div>
+    </nav>
+
+    <!-- Conteúdo Dinâmico do Wizard -->
+    <main>
+      <?!= include('wizard'); ?>
+    </main>
+  </div>
+
+  <!-- Spinner Overlay para Ações Assíncronas -->
+  <div id="spinner-overlay" class="spinner-overlay">
+    <div class="spinner"></div>
+    <div id="spinner-text" style="font-weight: 600; font-size: 1.05rem;">Processando...</div>
+  </div>
+
+  <!-- Scripts Interativos Client-side -->
+  <?!= include('js'); ?>
+</body>
+</html>
