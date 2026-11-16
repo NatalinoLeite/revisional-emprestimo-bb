@@ -84,6 +84,8 @@
     .alert-box { padding: 12px 16px; border-radius: 6px; font-size: 0.88rem; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; line-height: 1.4; }
     .alert-warning { background: var(--warning-bg); color: var(--warning-text); border-left: 4px solid var(--warning-border); }
     .alert-info { background: var(--primary-light); color: var(--primary); border-left: 4px solid var(--primary); }
+    .alert-success { background: var(--success-bg); color: var(--success-text); border-left: 4px solid var(--success-border); }
+    .alert-danger { background: var(--danger-bg); color: var(--danger-text); border-left: 4px solid var(--danger-border); }
 
     .btn-toolbar { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 24px; }
     .btn {
@@ -148,6 +150,10 @@
 </head>
 <body>
   <div class="container">
+    <div id="banner-local-file" class="alert-box alert-warning" style="display: none; margin-bottom: 20px;">
+      <span>⚠️ <b>Aviso de Execução Local:</b> Você abriu a página diretamente pelo arquivo (protocolo <code>file://</code>). As funções de Inteligência Artificial e consultas ao Banco Central exigem um servidor HTTP ativo. Para utilizar com IA no seu computador, dê um duplo clique em <b>iniciar_local.bat</b> (ou execute <code>npm start</code>) e acesse <b>http://localhost:3000</b>.</span>
+    </div>
+
     <header class="app-header">
       <div class="app-title">
         <span>⚖️ Revisional de Empréstimos</span>
@@ -223,6 +229,10 @@
 
       <div class="alert-box alert-info" id="badge-upload" style="display: none;">
         <span id="badge-upload-texto">✅ Documento carregado</span>
+      </div>
+
+      <div class="alert-box alert-warning" id="box-alertas-ia" style="display: none;">
+        <span id="badge-alertas-texto"></span>
       </div>
 
       <div class="form-grid">
@@ -462,26 +472,43 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    async function aoCarregarArquivo(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+    function aoCarregarArquivo(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) processarArquivo(file);
+    }
+
+    async function processarArquivo(file) {
+      const badge = document.getElementById("badge-upload");
+      const badgeTexto = document.getElementById("badge-upload-texto");
+      const boxAlertas = document.getElementById("box-alertas-ia");
+      const textoAlertas = document.getElementById("badge-alertas-texto");
+
+      if (boxAlertas) boxAlertas.style.display = "none";
+
+      // Verificação de protocolo file://
+      if (window.location.protocol === "file:") {
+        badge.className = "alert-box alert-warning";
+        badge.style.display = "flex";
+        badgeTexto.innerHTML = "⚠️ <b>Execução Offline:</b> O navegador bloqueia chamadas de IA via protocolo <code>file://</code>.<br>Para ler o contrato com IA no seu computador, dê dois cliques em <b>iniciar_local.bat</b> (ou <code>npm start</code>) e abra <b>http://localhost:3000</b> (ou use a URL da Vercel).<br>Você pode prosseguir preenchendo os dados abaixo manualmente.";
+        return;
+      }
 
       mostrarLoading("Enviando documento e extraindo cláusulas com Gemini IA...");
       const reader = new FileReader();
 
       reader.onload = async function() {
-        const base64 = reader.result.split(",")[1];
         try {
+          const base64 = reader.result.split(",")[1];
           const resp = await fetch("/api/extrair", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ arquivoBase64: base64, mimeType: file.type || "application/pdf" })
           });
 
-          const data = await resp.json();
+          const data = await resp.json().catch(() => ({ sucesso: false, erro: "Falha ao processar resposta do servidor HTTP (" + resp.status + ")" }));
           ocultarLoading();
 
-          if (data.sucesso && data.dados) {
+          if (resp.ok && data.sucesso && data.dados) {
             const d = data.dados;
             if (d.banco) document.getElementById("con-banco").value = d.banco;
             if (d.modalidade) document.getElementById("con-mod").value = d.modalidade;
@@ -492,17 +519,33 @@
             if (d.taxaMensalContrato) document.getElementById("con-taxa").value = d.taxaMensalContrato;
             if (d.tarifaCadastro) document.getElementById("con-tac").value = d.tarifaCadastro;
             if (d.seguroPrestamista) document.getElementById("con-seguro").value = d.seguroPrestamista;
-            
-            document.getElementById("badge-upload").style.display = "flex";
-            document.getElementById("badge-upload-texto").innerText = "✅ " + file.name + " analisado com IA";
+
+            badge.className = "alert-box alert-success";
+            badge.style.display = "flex";
+            badgeTexto.innerHTML = "✅ <b>" + file.name + "</b> lido e analisado com sucesso via <b>" + (data.provedor || "Gemini IA") + "</b>!";
+
+            if (data.alertas && data.alertas.length > 0) {
+              boxAlertas.style.display = "flex";
+              textoAlertas.innerHTML = "<b>⚠️ Atenção / Observações da IA:</b><br>" + data.alertas.map(a => "• " + a).join("<br>");
+            }
           } else {
-            alert("Não foi possível extrair automaticamente. Você pode preencher os campos manualmente.");
+            badge.className = "alert-box alert-warning";
+            badge.style.display = "flex";
+            badgeTexto.innerHTML = "⚠️ <b>Não foi possível extrair os dados do arquivo:</b> " + (data.erro || "Verifique se o documento é legível. Você pode preencher os campos manualmente.");
           }
         } catch (err) {
           ocultarLoading();
-          document.getElementById("badge-upload").style.display = "flex";
-          document.getElementById("badge-upload-texto").innerText = "📄 Arquivo carregado: " + file.name;
+          badge.className = "alert-box alert-danger";
+          badge.style.display = "flex";
+          badgeTexto.innerHTML = "❌ <b>Erro de conexão com o backend:</b> " + err.message + ". Verifique se o servidor local está rodando em http://localhost:3000 ou se o projeto na Vercel possui as variáveis de ambiente configuradas.";
         }
+      };
+
+      reader.onerror = function() {
+        ocultarLoading();
+        badge.className = "alert-box alert-danger";
+        badge.style.display = "flex";
+        badgeTexto.innerHTML = "❌ Erro ao ler o arquivo selecionado no disco.";
       };
 
       reader.readAsDataURL(file);
@@ -662,6 +705,44 @@
     function ocultarLoading() {
       document.getElementById("spinner").style.display = "none";
     }
+
+    // Inicialização e listeners
+    window.addEventListener("DOMContentLoaded", () => {
+      // 1. Alerta se executado via file://
+      if (window.location.protocol === "file:") {
+        const banner = document.getElementById("banner-local-file");
+        if (banner) banner.style.display = "flex";
+      }
+
+      // 2. Drag & Drop na área de upload
+      const dropArea = document.querySelector(".upload-area");
+      if (dropArea) {
+        ["dragenter", "dragover"].forEach(eventName => {
+          dropArea.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropArea.style.borderColor = "var(--primary)";
+            dropArea.style.backgroundColor = "var(--primary-light)";
+          }, false);
+        });
+
+        ["dragleave", "drop"].forEach(eventName => {
+          dropArea.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropArea.style.borderColor = "";
+            dropArea.style.backgroundColor = "";
+          }, false);
+        });
+
+        dropArea.addEventListener("drop", (e) => {
+          const dt = e.dataTransfer;
+          if (dt && dt.files && dt.files[0]) {
+            processarArquivo(dt.files[0]);
+          }
+        }, false);
+      }
+    });
   </script>
 </body>
 </html>

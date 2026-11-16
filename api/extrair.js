@@ -52,104 +52,132 @@ module.exports = async function handler(req, res) {
       "}\n" +
       "Apenas o JSON, sem markdown ou explicações.";
 
-    // 1. TENTATIVA COM GEMINI (se configurado ou como primário)
-    if (provider === "GEMINI" && process.env.GEMINI_API_KEY) {
-      try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    // 1. TENTATIVA COM GEMINI (suporta nativamente PDF e imagens)
+    if (process.env.GEMINI_API_KEY) {
+      const apiKey = process.env.GEMINI_API_KEY;
+      const modelosParaTentar = [
+        process.env.GEMINI_MODEL,
+        "gemini-3.1-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-3.8-flash"
+      ].filter(Boolean);
 
-        const payload = {
-          contents: [
+      // Remove duplicatas
+      const modelosUnicos = [...new Set(modelosParaTentar)];
+
+      for (const model of modelosUnicos) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          const payload = {
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: promptExtracao },
+                  {
+                    inlineData: {
+                      mimeType: mimeType,
+                      data: arquivoBase64
+                    }
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json"
+            }
+          };
+
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+
+          if (resp.ok) {
+            const data = await resp.json();
+            const texto = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (texto) {
+              rawDados = JSON.parse(texto);
+              provedorUtilizado = `Google Gemini (${model})`;
+              break; // Sucesso com Gemini
+            }
+          } else {
+            const errData = await resp.json().catch(() => ({}));
+            console.warn(`Gemini (${model}) retornou status ${resp.status}:`, errData.error?.message || resp.statusText);
+          }
+        } catch (errGemini) {
+          console.warn(`Exceção no Gemini (${model}):`, errGemini.message);
+        }
+      }
+    }
+
+    // 2. TENTATIVA COM OPENAI (CHATGPT) (apenas para imagens, pois OpenAI não suporta PDFs como image_url)
+    if (!rawDados && process.env.OPENAI_API_KEY) {
+      if (mimeType.startsWith("image/")) {
+        try {
+          const openaiKey = process.env.OPENAI_API_KEY;
+          const openaiModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
+          const urlOpenAI = "https://api.openai.com/v1/chat/completions";
+
+          const messages = [
+            {
+              role: "system",
+              content: "Você é um perito financeiro em contratos bancários brasileiros. Retorne SOMENTE JSON puro."
+            },
             {
               role: "user",
-              parts: [
-                { text: promptExtracao },
+              content: [
+                { type: "text", text: promptExtracao },
                 {
-                  inlineData: {
-                    mimeType: mimeType,
-                    data: arquivoBase64
+                  type: "image_url",
+                  image_url: {
+                    url: `data:${mimeType};base64,${arquivoBase64}`
                   }
                 }
               ]
             }
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: "application/json"
+          ];
+
+          const respOpenAI = await fetch(urlOpenAI, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${openaiKey}`
+            },
+            body: JSON.stringify({
+              model: openaiModel,
+              messages: messages,
+              temperature: 0.1,
+              response_format: { type: "json_object" }
+            })
+          });
+
+          if (respOpenAI.ok) {
+            const dataOpenAI = await respOpenAI.json();
+            const texto = dataOpenAI.choices?.[0]?.message?.content;
+            if (texto) {
+              rawDados = JSON.parse(texto);
+              provedorUtilizado = `OpenAI (${openaiModel})`;
+            }
+          } else {
+            const errOpenAI = await respOpenAI.json().catch(() => ({}));
+            console.warn("Falha na chamada OpenAI:", errOpenAI.error?.message || respOpenAI.statusText);
           }
-        };
-
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (resp.ok) {
-          const data = await resp.json();
-          const texto = data.candidates[0].content.parts[0].text;
-          rawDados = JSON.parse(texto);
-          provedorUtilizado = `Google Gemini (${model})`;
+        } catch (errOpenAI) {
+          console.warn("Exceção na OpenAI:", errOpenAI.message);
         }
-      } catch (errGemini) {
-        console.warn("Falha no Gemini, tentando fallback:", errGemini.message);
-      }
-    }
-
-    // 2. TENTATIVA COM OPENAI (CHATGPT) (se configurado ou como fallback)
-    if (!rawDados && process.env.OPENAI_API_KEY) {
-      try {
-        const openaiKey = process.env.OPENAI_API_KEY;
-        const openaiModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
-        const urlOpenAI = "https://api.openai.com/v1/chat/completions";
-
-        const messages = [
-          {
-            role: "system",
-            content: "Você é um perito financeiro em contratos bancários brasileiros. Retorne SOMENTE JSON puro."
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: promptExtracao },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType};base64,${arquivoBase64}`
-                }
-              }
-            ]
-          }
-        ];
-
-        const respOpenAI = await fetch(urlOpenAI, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${openaiKey}`
-          },
-          body: JSON.stringify({
-            model: openaiModel,
-            messages: messages,
-            temperature: 0.1,
-            response_format: { type: "json_object" }
-          })
-        });
-
-        if (respOpenAI.ok) {
-          const dataOpenAI = await respOpenAI.json();
-          const texto = dataOpenAI.choices[0].message.content;
-          rawDados = JSON.parse(texto);
-          provedorUtilizado = `OpenAI (${openaiModel})`;
-        }
-      } catch (errOpenAI) {
-        console.warn("Falha na OpenAI:", errOpenAI.message);
+      } else {
+        console.warn("OpenAI ignorada para arquivo PDF (OpenAI Chat API suporta apenas imagens).");
       }
     }
 
     if (!rawDados) {
-      throw new Error("Não foi possível extrair dados com nenhum dos provedores de IA (Gemini / OpenAI). Verifique as chaves nas variáveis de ambiente.");
+      const msg = !process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY
+        ? "Nenhuma chave de IA (GEMINI_API_KEY ou OPENAI_API_KEY) configurada nas variáveis de ambiente. Configure no painel da Vercel ou no arquivo .env."
+        : "Não foi possível extrair os dados do documento com a IA. O documento pode ser muito pesado, protegido por senha ou a IA está temporariamente indisponível. Você pode preencher os campos manualmente no Passo 2.";
+      throw new Error(msg);
     }
 
     // Validação contábil e higienização estrita

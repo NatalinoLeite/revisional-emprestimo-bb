@@ -4,7 +4,7 @@
   "description": "Sistema de cálculo revisional de empréstimo bancário (BB Crédito Salário) com IA Gemini e APIs oficiais do Banco Central.",
   "main": "api/calcular.js",
   "scripts": {
-    "start": "npx serve public",
+    "start": "node server.js",
     "dev": "vercel dev",
     "test": "node testes.gs && node testes_bcb.js && node testes_ia.js && node testes_interface.js && node testes_relatorio.js"
   },
