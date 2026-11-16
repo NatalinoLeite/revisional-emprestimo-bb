@@ -404,27 +404,61 @@ function GeminiProvider() {
 }
 
 /**
- * Esqueleto de provedor OpenAI para futura expansão / redundância.
+ * Provedor OpenAI (ChatGPT) com suporte a gpt-4o-mini e fallback.
  */
 function OpenAIProvider() {
   this.chamarComArquivo = function(opts) {
     const apiKey = obterPropriedadeScript("OPENAI_API_KEY");
-    if (!apiKey) throw new Error("OPENAI_API_KEY não configurada.");
-    throw new Error("Provedor OpenAI para arquivos ainda não habilitado.");
+    if (!apiKey) throw new Error("Chave OPENAI_API_KEY não configurada.");
+    const model = obterPropriedadeScript("OPENAI_MODEL") || "gpt-4o-mini";
+    const url = "https://api.openai.com/v1/chat/completions";
+
+    const messages = [
+      {
+        role: "system",
+        content: "Você é um perito contábil financeiro em contratos bancários brasileiros. Retorne SOMENTE JSON puro."
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: opts.prompt },
+          {
+            type: "image_url",
+            image_url: {
+              url: "data:" + opts.mimeType + ";base64," + opts.arquivoBase64
+            }
+          }
+        ]
+      }
+    ];
+
+    const payload = {
+      model: model,
+      messages: messages,
+      temperature: 0.1,
+      response_format: { type: "json_object" }
+    };
+
+    const resposta = executarRequisicaoHttpJson(url, payload, { "Authorization": "Bearer " + apiKey });
+    const parsed = JSON.parse(resposta);
+    return parsed.choices[0].message.content;
   };
 
   this.chamarTexto = function(opts) {
     const apiKey = obterPropriedadeScript("OPENAI_API_KEY");
-    if (!apiKey) throw new Error("OPENAI_API_KEY não configurada.");
+    if (!apiKey) throw new Error("Chave OPENAI_API_KEY não configurada.");
+    const model = obterPropriedadeScript("OPENAI_MODEL") || "gpt-4o-mini";
     const url = "https://api.openai.com/v1/chat/completions";
+
     const payload = {
-      model: "gpt-4o-mini",
+      model: model,
       messages: [
-        { role: "system", content: opts.systemInstruction || "Assistente jurídico." },
+        { role: "system", content: opts.systemInstruction || "Você é um assistente jurídico especializado em direito bancário." },
         { role: "user", content: opts.prompt }
       ],
-      temperature: 0.3
+      temperature: 0.2
     };
+
     const resposta = executarRequisicaoHttpJson(url, payload, { "Authorization": "Bearer " + apiKey });
     const parsed = JSON.parse(resposta);
     return parsed.choices[0].message.content;

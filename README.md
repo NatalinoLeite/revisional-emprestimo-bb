@@ -47,9 +47,11 @@ git push -u origin main
 3. Localize o repositório `revisional-emprestimo-bb` na lista e clique em **Import**.
 4. Na tela de configuração:
    - **Framework Preset**: Deixe em *Other* (a Vercel detecta automaticamente a pasta `public/` e as Serverless Functions em `api/`).
-   - Expanda a seção **Environment Variables** e adicione a seguinte variável:
-     - **Name**: `GEMINI_API_KEY`
-     - **Value**: `sua_chave_de_api_do_google_ai_studio`
+   - Expanda a seção **Environment Variables** e adicione as variáveis de ambiente:
+     - **Name**: `GEMINI_API_KEY` | **Value**: `sua_chave_gemini`
+     - **Name**: `GEMINI_MODEL` | **Value**: `gemini-3.8-flash`
+     - **Name**: `OPENAI_API_KEY` | **Value**: `sua_chave_openai` (opcional / redundância)
+     - **Name**: `LLM_PROVIDER` | **Value**: `GEMINI` (ou `OPENAI`)
 5. Clique em **Deploy**.
 6. Em cerca de 15 a 30 segundos, a Vercel disponibilizará uma URL pública segura com SSL (ex.: `https://revisional-emprestimo-bb.vercel.app`).
 
