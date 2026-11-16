@@ -86,6 +86,10 @@ function gerarRelatorioRevisionalPDF(payload) {
   pSubtitulo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
   pSubtitulo.setItalic(true);
 
+  const pIdentificacaoTopo = body.appendParagraph("Mutuário(a): " + nomeCliente + " | CPF: " + (cliente.cpf || "Não informado"));
+  pIdentificacaoTopo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+  pIdentificacaoTopo.setBold(true);
+
   body.appendHorizontalRule();
 
   // 3. Seção 1: Identificação das Partes e do Contrato
@@ -93,7 +97,7 @@ function gerarRelatorioRevisionalPDF(payload) {
   s1.setHeading(DocumentApp.ParagraphHeading.HEADING2);
 
   const tabelaDados = body.appendTable([
-    ["Cliente / Mutuário:", nomeCliente, "CPF / CNPJ:", mascararDocumento(cliente.cpf || "")],
+    ["Cliente / Mutuário:", nomeCliente, "CPF / CNPJ:", cliente.cpf || "Não informado"],
     ["Instituição Financeira:", dc.banco || "Banco do Brasil S.A.", "Modalidade:", dc.modalidade || "Crédito pessoal"],
     ["Nº da Operação:", dc.numeroContrato || "Não informado", "Processo Judicial:", cliente.numeroProcesso || "Fase Pré-processual"],
     ["Data da Contratação:", formatarDataBR(dc.dataContrato), "Primeiro Vencimento:", formatarDataBR(dc.dataPrimeiraParcela)],
@@ -164,8 +168,44 @@ function gerarRelatorioRevisionalPDF(payload) {
 
   body.appendParagraph("");
 
-  // 6. Seção 4: Conclusão do Semáforo e Parecer Preliminar
-  const s4 = body.appendParagraph("4. CONCLUSÃO DA TRIAGEM DE VIABILIDADE");
+  // 6. Seção 4: Teses Jurídicas e Fundamentação Legal Aplicáveis
+  const sTeses = body.appendParagraph("4. TESES JURÍDICAS E FUNDAMENTAÇÃO APLICÁVEIS");
+  sTeses.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+
+  const pTese1 = body.appendParagraph("4.1. Limitabilidade dos Juros Remuneratórios à Taxa Média do BACEN (Tema 247/STJ e Súmula 382/STJ):");
+  pTese1.setBold(true);
+  const descTese1 = body.appendParagraph("Conforme tese vinculante firmada no REsp 1.061.530/RS (Tema 247/STJ), a estipulação de juros remuneratórios substancialmente superiores à taxa média de mercado do BACEN configura abusividade (Arts. 39, V e 51, IV do CDC), justificando a intervenção judicial para limitar a taxa ao patamar médio de mercado à época da contratação.");
+  descTese1.setFontSize(9);
+
+  const pTese2 = body.appendParagraph("4.2. Ilegalidade da Venda Casada de Seguro Prestamista (Tema 972/STJ):");
+  pTese2.setBold(true);
+  const descTese2 = body.appendParagraph("Segundo tese consolidada no REsp 1.639.320/SP (Tema 972/STJ), é ilícita a imposição coercitiva de seguro prestamista embutido no financiamento sem liberdade de escolha ao consumidor (Art. 39, I do CDC), impondo-se a restituição integral do prêmio financiado.");
+  descTese2.setFontSize(9);
+
+  const pTese3 = body.appendParagraph("4.3. Ilegalidade de Tarifas Administrativas Sem Contraprestação Efetiva (Súmula 566/STJ e Tema 618/STJ):");
+  pTese3.setBold(true);
+  const descTese3 = body.appendParagraph("É abusiva a cobrança de TAC, TEC e tarifas operacionais genéricas. A tarifa de cadastro é admitida exclusivamente no início do relacionamento bancário, vedada sua cobrança reiterada em renovações e operações sucessivas.");
+  descTese3.setFontSize(9);
+
+  const pTese4 = body.appendParagraph("4.4. Preservação do Mínimo Existencial e Proteção ao Superendividamento (Lei 14.181/2021 e Tema 1085/STJ):");
+  pTese4.setBold(true);
+  const descTese4 = body.appendParagraph("Com fundamento no princípio da dignidade da pessoa humana (Art. 1º, III da CF) e nos Arts. 54-A e seguintes do CDC, as parcelas debitadas em conta salário/benefício devem ser limitadas a 30% a 35% dos rendimentos líquidos para salvaguardar a subsistência do mutuário.");
+  descTese4.setFontSize(9);
+
+  const pTese5 = body.appendParagraph("4.5. Repetição do Indébito em Dobro / Simples com Correção Monetária (Art. 42 CDC e EAREsp 676.608/RJ):");
+  pTese5.setBold(true);
+  const descTese5 = body.appendParagraph("Garantia de repetição dos valores pagos a maior com atualização monetária e juros de mora a partir de cada desembolso, viabilizando amortização substancial do saldo devedor remanescente.");
+  descTese5.setFontSize(9);
+
+  const pTese6 = body.appendParagraph("4.6. Expurgo da Capitalização Diária / Anatocismo Não Informado (Súmulas 539 e 541/STJ):");
+  pTese6.setBold(true);
+  const descTese6 = body.appendParagraph("A capitalização de juros em periodicidade inferior à mensal exige cláusula numérica e redação translúcida expressa no instrumento contratual.");
+  descTese6.setFontSize(9);
+
+  body.appendParagraph("");
+
+  // 7. Seção 5: Conclusão do Semáforo e Parecer Preliminar
+  const s4 = body.appendParagraph("5. CONCLUSÃO DA TRIAGEM DE VIABILIDADE");
   s4.setHeading(DocumentApp.ParagraphHeading.HEADING2);
 
   const pSemaforo = body.appendParagraph("CLASSIFICAÇÃO: " + (sem.cor || "ANÁLISE") + " - " + (sem.titulo || ""));
