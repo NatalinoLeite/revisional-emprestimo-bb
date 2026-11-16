@@ -169,8 +169,27 @@ function gerarRelatorioRevisionalPDF(payload) {
   body.appendParagraph("");
 
   // 6. Seção 4: Teses Jurídicas e Fundamentação Legal Aplicáveis
-  const sTeses = body.appendParagraph("4. TESES JURÍDICAS E FUNDAMENTAÇÃO APLICÁVEIS");
+  const sTeses = body.appendParagraph("4. MATRIZ PERICIAL DE PROBABILIDADE DE PROCEDÊNCIA");
   sTeses.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+
+  const introTeses = body.appendParagraph("Triagem técnica preliminar fundamentada estritamente nos fatos reais do contrato e confrontada com os critérios vinculantes do STJ:");
+  introTeses.setFontSize(9);
+  introTeses.setItalic(true);
+
+  // Tabela Resumo da Matriz Pericial
+  const matriz = res.matrizPericial || [];
+  if (matriz && matriz.length > 0) {
+    const linhasMatriz = [
+      ["Pedido / Tese Periciada", "Fato Real no Contrato", "Critério Jurisprudencial", "Probabilidade de Êxito"]
+    ];
+    matriz.forEach(function(m) {
+      linhasMatriz.push([m.pedido, m.fatoReal, m.criterioSTJ, m.probabilidade]);
+    });
+    const tabelaMatriz = body.appendTable(linhasMatriz);
+    formatarTabela(tabelaMatriz, "#f8fafc", "#e2e8f0");
+  }
+
+  body.appendParagraph("");
 
   const pTese1 = body.appendParagraph("4.1. Limitabilidade dos Juros Remuneratórios à Taxa Média do BACEN (Tema 247/STJ e Súmula 382/STJ):");
   pTese1.setBold(true);

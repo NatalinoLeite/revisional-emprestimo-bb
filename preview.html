@@ -130,6 +130,19 @@
     .bar-track { background: #e2e8f0; height: 20px; border-radius: 4px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
 
+    /* Estilos da Matriz Pericial Contábil */
+    .badge-prob { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-prob-alta { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .badge-prob-media { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-prob-baixa { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .badge-prob-inaplicavel { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+    .matriz-pericial-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; margin-bottom: 20px; }
+    .matriz-pericial-table th { background: #0f172a; color: #ffffff; padding: 10px 12px; font-weight: 600; text-align: left; }
+    .matriz-pericial-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .matriz-pericial-table tr:nth-child(even) { background: #f8fafc; }
+    .matriz-card { border: 1px solid var(--border); border-radius: 6px; padding: 14px 18px; background: #ffffff; margin-bottom: 12px; }
+
     .spinner-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(15, 23, 42, 0.6); display: none; align-items: center;
@@ -171,10 +184,13 @@
       .app-header, .stepper, .btn-toolbar, .upload-area, #banner-local-file, #modal-chaves, .user-badge { display: none !important; }
       .wizard-card { border: none; box-shadow: none; padding: 0; margin-bottom: 24px; }
       .laudo-header-card { border: 1px solid #cbd5e1 !important; box-shadow: none !important; margin-bottom: 20px !important; }
-      .tese-item { break-inside: avoid; margin-bottom: 12px; }
+      .tese-item, .matriz-card { break-inside: avoid; margin-bottom: 12px; }
       .metrics-grid { break-inside: avoid; }
       .table-responsive { overflow: visible !important; }
-      .cenarios-table { font-size: 0.82rem; }
+      .cenarios-table, .matriz-pericial-table { font-size: 0.82rem; }
+      .matriz-pericial-table th { background: #e2e8f0 !important; color: #000 !important; }
+      .matriz-pericial-table { page-break-inside: avoid; }
+      .badge-prob { border: 1px solid #000 !important; }
     }
   </style>
 </head>
@@ -500,113 +516,25 @@
           </div>
         </div>
 
-        <!-- SEÇÃO DE TESES JURÍDICAS APLICÁVEIS -->
+        <!-- SEÇÃO PERICIAL: TRIAGEM CONTÁBIL & MATRIZ DE PROBABILIDADE DE PROCEDÊNCIA -->
         <div style="margin-top: 28px; border-top: 2px solid var(--border); padding-top: 22px;">
-          <div style="margin-bottom: 16px;">
-            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;">
-              ⚖️ Teses Jurídicas e Fundamentação Legal Aplicáveis
-            </h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted);">
-              Teses pacificadas no Superior Tribunal de Justiça (STJ) que respaldam os pedidos na Petição Inicial desta Ação Revisional:
-            </p>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                🔬 Triagem Pericial Contábil & Matriz de Probabilidade de Procedência
+              </h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                Diagnóstico pericial estrito baseado exclusivamente em <b>fatos reais do contrato auditado</b> confrontados com os critérios objetivos e repetitivos do <b>STJ e BACEN</b>. Não inventa teses ou pedidos sem fato gerador.
+              </p>
+            </div>
+            <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; font-weight: 600; border: 1px solid #bae6fd;">
+              Critérios Repetitivos do STJ
+            </span>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <!-- Tese 1 -->
-            <div class="tese-item" style="border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px; padding: 14px 18px; background: #ffffff;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary);">
-                  1. Limitabilidade dos Juros Remuneratórios à Taxa Média do BACEN
-                </h4>
-                <span style="font-size: 0.75rem; font-weight: 600; background: var(--primary-light); color: var(--primary); padding: 2px 8px; border-radius: 4px;">Tema Repetitivo 247/STJ & Súmula 382/STJ</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
-                <b>Base Legal:</b> REsp 1.061.530/RS (Recurso Repetitivo) e Arts. 39, V e 51, IV do Código de Defesa do Consumidor (CDC).
-              </p>
-              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-                <b>Como usar na ação:</b> Demonstrar a disparidade entre a taxa praticada no contrato e a média de mercado divulgada pelo Banco Central (SGS Série 25464 / Olinda). Quando a taxa contratada supera 1,5x a média do BACEN, o STJ autoriza a intervenção judicial para expurgar a abusividade e limitar os juros à taxa média oficial.
-              </p>
-            </div>
-
-            <!-- Tese 2 -->
-            <div class="tese-item" style="border: 1px solid var(--border); border-left: 4px solid #059669; border-radius: 6px; padding: 14px 18px; background: #ffffff;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #065f46;">
-                  2. Ilegalidade da Venda Casada de Seguro Prestamista
-                </h4>
-                <span style="font-size: 0.75rem; font-weight: 600; background: var(--success-bg); color: var(--success-text); padding: 2px 8px; border-radius: 4px;">Tema Repetitivo 972/STJ</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
-                <b>Base Legal:</b> REsp 1.639.320/SP (Tema 972/STJ) e Art. 39, I do CDC.
-              </p>
-              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-                <b>Como usar na ação:</b> Pleitear a nulidade da cláusula de seguro prestamista embutida no valor financiado. O mutuário não pode ser obrigado a contratar seguro com a instituição ou seguradora por ela designada, cabendo a restituição total do valor pago ou a sua dedução no saldo devedor (Cenário E).
-              </p>
-            </div>
-
-            <!-- Tese 3 -->
-            <div class="tese-item" style="border: 1px solid var(--border); border-left: 4px solid #d97706; border-radius: 6px; padding: 14px 18px; background: #ffffff;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #92400e;">
-                  3. Ilegalidade de Tarifas Administrativas Sem Efetiva Contraprestação
-                </h4>
-                <span style="font-size: 0.75rem; font-weight: 600; background: var(--warning-bg); color: var(--warning-text); padding: 2px 8px; border-radius: 4px;">Súmula 566/STJ & Tema 618/STJ</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
-                <b>Base Legal:</b> REsp 1.251.331/RS, Súmula 566/STJ e Resoluções CMN/BACEN.
-              </p>
-              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-                <b>Como usar na ação:</b> Requerer o expurgo de TAC (Tarifa de Abertura de Crédito), TEC e taxas de cadastro repetidas em renovações, por configurarem repasse indevido dos custos operacionais do banco ao consumidor sem prestação autônoma de serviço.
-              </p>
-            </div>
-
-            <!-- Tese 4 -->
-            <div class="tese-item" style="border: 1px solid var(--border); border-left: 4px solid #7c3aed; border-radius: 6px; padding: 14px 18px; background: #ffffff;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #6d28d9;">
-                  4. Preservação do Mínimo Existencial e Superendividamento
-                </h4>
-                <span style="font-size: 0.75rem; font-weight: 600; background: #f5f3ff; color: #6d28d9; padding: 2px 8px; border-radius: 4px;">Lei 14.181/2021 & Tema 1085/STJ</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
-                <b>Base Legal:</b> Art. 1º, III da CF/88, Arts. 54-A e 54-D do CDC e REsp 1.863.973/SP.
-              </p>
-              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-                <b>Como usar na ação:</b> Em caso de descontos diretos em conta corrente onde o cliente recebe salário (como no BB Crédito Salário), pedir liminarmente a limitação das parcelas para não comprometer mais de 30% a 35% da renda líquida, garantindo a subsistência do consumidor.
-              </p>
-            </div>
-
-            <!-- Tese 5 -->
-            <div class="tese-item" style="border: 1px solid var(--border); border-left: 4px solid #2563eb; border-radius: 6px; padding: 14px 18px; background: #ffffff;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #1d4ed8;">
-                  5. Repetição do Indébito em Dobro ou Simples com Correção pelo IPCA
-                </h4>
-                <span style="font-size: 0.75rem; font-weight: 600; background: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px;">Art. 42 CDC & EAREsp 676.608/RJ</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
-                <b>Base Legal:</b> Art. 42, Parágrafo Único do CDC e EAREsp 676.608/RJ (Corte Especial do STJ).
-              </p>
-              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-                <b>Como usar na ação:</b> Cobrar a devolução das quantias pagas em excesso sobre as parcelas já quitadas, atualizadas monetariamente desde cada pagamento indevido, permitindo a amortização no saldo remanescente ou restituição em espécie.
-              </p>
-            </div>
-
-            <!-- Tese 6 -->
-            <div class="tese-item" style="border: 1px solid var(--border); border-left: 4px solid #475569; border-radius: 6px; padding: 14px 18px; background: #ffffff;">
-              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
-                <h4 style="font-size: 0.95rem; font-weight: 700; color: #334155;">
-                  6. Expurgo da Capitalização Diária / Anatocismo Não Informado Transparentemente
-                </h4>
-                <span style="font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px;">Súmulas 539 e 541/STJ</span>
-              </div>
-              <p style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
-                <b>Base Legal:</b> Súmulas 539 e 541/STJ e Art. 52 do CDC (Dever de Informação Clara).
-              </p>
-              <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
-                <b>Como usar na ação:</b> Se o contrato não discriminar de forma expressa e numérica a taxa de juros diária e anual superior ao duodécuplo da mensal, afastar a capitalização de juros ou aplicar amortização linear (Gauss ou SAC).
-              </p>
-            </div>
+          <!-- Container Dinâmico da Matriz Pericial -->
+          <div id="container-matriz-pericial">
+            <!-- Gerado dinamicamente via JavaScript -->
           </div>
         </div>
 
@@ -947,6 +875,102 @@
       const percEcon = Math.min(100, (totEcon / totOrig) * 100);
       document.getElementById("graf-barra-recalc").style.width = percRec.toFixed(1) + "%";
       document.getElementById("graf-barra-econ").style.width = percEcon.toFixed(1) + "%";
+
+      // Renderização da Matriz Pericial Contábil de Probabilidade
+      if (res.matrizPericial) {
+        renderizarMatrizPericial(res.matrizPericial);
+      }
+    }
+
+    function renderizarMatrizPericial(matriz) {
+      const container = document.getElementById("container-matriz-pericial");
+      if (!container) return;
+
+      if (!matriz || matriz.length === 0) {
+        container.innerHTML = "<p style='color: var(--text-muted); font-size: 0.85rem;'>Nenhum dado pericial apurado para este contrato.</p>";
+        return;
+      }
+
+      // 1. Tabela Sintética de Triagem
+      let html = `
+        <div class="table-responsive" style="margin-bottom: 20px;">
+          <table class="matriz-pericial-table">
+            <thead>
+              <tr>
+                <th style="width: 28%;">Pretensão / Pedido Revisional</th>
+                <th style="width: 32%;">Fato Real Auditado (Contrato)</th>
+                <th style="width: 25%;">Critério Objetivo STJ</th>
+                <th style="width: 15%; text-align: center;">Probabilidade de Êxito</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      matriz.forEach(item => {
+        let classeBadge = "badge-prob-inaplicavel";
+        if (item.classe === "alta") classeBadge = "badge-prob-alta";
+        else if (item.classe === "media") classeBadge = "badge-prob-media";
+        else if (item.classe === "baixa") classeBadge = "badge-prob-baixa";
+
+        html += `
+          <tr>
+            <td><b>${item.pedido}</b></td>
+            <td><small style="color: var(--text-main); font-weight: 500;">${item.fatoReal}</small></td>
+            <td><small style="color: var(--text-muted);">${item.criterioSTJ}</small></td>
+            <td style="text-align: center;">
+              <span class="badge-prob ${classeBadge}">${item.probabilidade}</span>
+            </td>
+          </tr>
+        `;
+      });
+
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      // 2. Detalhamento e Parecer do Perito
+      html += `
+        <div>
+          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            📑 Parecer Técnico e Fundamentação Pericial dos Pedidos
+          </h4>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+      `;
+
+      matriz.forEach(item => {
+        let corBorda = "#94a3b8";
+        if (item.classe === "alta") corBorda = "#059669";
+        else if (item.classe === "media") corBorda = "#d97706";
+        else if (item.classe === "baixa") corBorda = "#dc2626";
+
+        html += `
+          <div class="matriz-card" style="border-left: 4px solid ${corBorda};">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+              <h5 style="font-size: 0.92rem; font-weight: 700; color: var(--secondary); margin: 0;">
+                ${item.pedido}
+              </h5>
+              <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">
+                ${item.criterioSTJ}
+              </span>
+            </div>
+            <div style="font-size: 0.82rem; margin-bottom: 4px; color: var(--text-main);">
+              <b>Fato Concreto no Contrato:</b> ${item.fatoReal}
+            </div>
+            <div style="font-size: 0.82rem; color: #334155; line-height: 1.45; background: #f8fafc; padding: 8px 12px; border-radius: 4px; border: 1px dashed var(--border);">
+              <b>Parecer do Perito Contábil:</b> ${item.fundamentacaoPericial}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = html;
     }
 
     function renderizarResultadoSimulado(p) {
@@ -954,16 +978,85 @@
       const n = p.prazo;
       const pmt = p.valorParcela;
       const pagas = p.parcelasPagas;
+      const txContrato = p.taxaMensalContrato;
+      const txMedia = p.taxaMediaMercado || 1.82;
+      const razao = txContrato / txMedia;
       const novaPmt = pmt * 0.78;
       const red = pmt - novaPmt;
       const ind = red * pagas;
       const prov = ind + (red * (n - pagas));
 
+      const matrizSimulada = [
+        {
+          pedido: "1. Limitação dos Juros Remuneratórios à Média BACEN",
+          fatoReal: `Taxa Contrato: ${txContrato.toFixed(2)}% a.m. | BACEN: ${txMedia.toFixed(2)}% a.m. | Razão: ${razao.toFixed(2)}x`,
+          criterioSTJ: "Tema 247/STJ e Súmula 382/STJ (REsp 1.061.530/RS)",
+          probabilidade: razao >= 2.0 ? "MUITO ALTA (Abusividade Qualificada)" : (razao >= 1.5 ? "ALTA (Padrão Repetitivo STJ)" : (razao >= 1.3 ? "MÉDIA" : "BAIXA")),
+          classe: razao >= 1.5 ? "alta" : (razao >= 1.3 ? "media" : "baixa"),
+          fundamentacaoPericial: razao >= 1.5
+            ? `A taxa do contrato (${txContrato.toFixed(2)}% a.m.) atinge ${razao.toFixed(2)}x a média do BACEN (${txMedia.toFixed(2)}% a.m.), atendendo rigorosamente ao critério objetivo consolidado pelo STJ no REsp 1.061.530/RS (Tema 247).`
+            : `A taxa praticada não atinge a discrepância substancial de 1,5x frente à média do BACEN.`
+        },
+        {
+          pedido: "2. Expurgo e Restituição de Seguro Prestamista (Venda Casada)",
+          fatoReal: (p.seguro && p.seguro > 0) ? `Seguro embutido de R$ ${p.seguro.toFixed(2)}` : "Nenhum seguro prestamista cobrado no instrumento (R$ 0,00)",
+          criterioSTJ: "Tema Repetitivo 972/STJ (REsp 1.639.320/SP) e Art. 39, I do CDC",
+          probabilidade: (p.seguro && p.seguro > 0) ? "ALTA (Tema Vinculante 972/STJ)" : "INAPLICÁVEL (Sem Fato Gerador)",
+          classe: (p.seguro && p.seguro > 0) ? "alta" : "inaplicavel",
+          fundamentacaoPericial: (p.seguro && p.seguro > 0)
+            ? `Venda casada ilícita constatada. A cobrança de seguro sem faculdade de escolha viola o Tema 972/STJ.`
+            : `Ausência de cobrança de seguro prestamista no contrato. Fato gerador inexistente.`
+        },
+        {
+          pedido: "3. Ilegalidade de Tarifas Administrativas Acessórias",
+          fatoReal: (p.tarifas && p.tarifas > 0) ? `Tarifas cobradas de R$ ${p.tarifas.toFixed(2)}` : "Nenhuma tarifa acessória informada (R$ 0,00)",
+          criterioSTJ: "Súmula 566/STJ e Tema 618/STJ (REsp 1.251.331/RS)",
+          probabilidade: (p.tarifas && p.tarifas > 0) ? "MÉDIA A ALTA (Favorável se Renovação)" : "INAPLICÁVEL (Sem Fato Gerador)",
+          classe: (p.tarifas && p.tarifas > 0) ? "alta" : "inaplicavel",
+          fundamentacaoPericial: (p.tarifas && p.tarifas > 0)
+            ? `Cobrança de tarifas em renegociações é ilegítima conforme Súmula 566/STJ.`
+            : `Nenhuma tarifa acessória informada no instrumento.`
+        },
+        {
+          pedido: "4. Limitação dos Descontos por Superendividamento",
+          fatoReal: p.rendaLiquida > 0 ? `Parcela: R$ ${pmt.toFixed(2)} | Renda: R$ ${p.rendaLiquida.toFixed(2)} | Comprometimento: ${((pmt/p.rendaLiquida)*100).toFixed(1)}%` : "Renda líquida não declarada",
+          criterioSTJ: "Lei 14.181/2021 (Superendividamento) e Tema 1085/STJ",
+          probabilidade: (p.rendaLiquida > 0 && (pmt/p.rendaLiquida) > 0.35) ? "ALTA (Liminar Concessível)" : ((p.rendaLiquida > 0 && (pmt/p.rendaLiquida) >= 0.30) ? "MÉDIA" : "BAIXA"),
+          classe: (p.rendaLiquida > 0 && (pmt/p.rendaLiquida) > 0.35) ? "alta" : ((p.rendaLiquida > 0 && (pmt/p.rendaLiquida) >= 0.30) ? "media" : "baixa"),
+          fundamentacaoPericial: (p.rendaLiquida > 0 && (pmt/p.rendaLiquida) > 0.35)
+            ? `A parcela consome mais de 35% dos rendimentos líquidos, ensejando tutela de urgência com amparo na Lei do Superendividamento.`
+            : `Comprometimento salarial dentro da margem legal ou renda não comprovada.`
+        },
+        {
+          pedido: "5. Repetição de Indébito (Restituição de Parcelas Pagas)",
+          fatoReal: pagas > 0 ? `${pagas} parcelas quitadas de um total de ${n}` : "Nenhuma parcela paga até o momento (0 quitadas)",
+          criterioSTJ: "Art. 42, § único do CDC e EAREsp 676.608/RJ",
+          probabilidade: pagas > 0 ? "ALTA (Simples) / MÉDIA (Dobro)" : "INAPLICÁVEL (0 Parcelas Pagas)",
+          classe: pagas > 0 ? "alta" : "inaplicavel",
+          fundamentacaoPericial: pagas > 0
+            ? `Existem ${pagas} parcelas pagas com sobrepreço. O valor pago a maior deve ser compensado no saldo devedor ou restituído.`
+            : `Sem parcelas pagas até o momento. Proveito financeiro incide apenas nas parcelas vincendas.`
+        },
+        {
+          pedido: "6. Expurgo da Capitalização de Juros (Anatocismo)",
+          fatoReal: `Taxa Mensal: ${txContrato.toFixed(2)}% | Contrato de Empréstimo Bancário`,
+          criterioSTJ: "Súmula 541/STJ",
+          probabilidade: "BAIXA (Tese Predominantemente Rejeitada pelo STJ)",
+          classe: "baixa",
+          fundamentacaoPericial: "O STJ valida a capitalização periódica expressa. O perito adverte que arguir somente o anatocismo gera alto risco de improcedência; a via eficaz é a limitação à taxa média do BACEN."
+        }
+      ];
+
       renderizarResultadoFinal({
-        semaforo: { cor: "VERDE", titulo: "ALTA VIABILIDADE REVISIONAL (SEMÁFORO VERDE)", explicacao: "A taxa supera significativamente a média oficial do BACEN." },
+        semaforo: {
+          cor: razao >= 2.0 ? "VERDE" : (razao >= 1.5 ? "VERDE" : (razao >= 1.3 ? "AMARELO" : "VERMELHO")),
+          titulo: razao >= 1.5 ? "ALTA VIABILIDADE REVISIONAL (SEMÁFORO VERDE)" : (razao >= 1.3 ? "VIABILIDADE MODERADA (SEMÁFORO AMARELO)" : "BAIXA VIABILIDADE (SEMÁFORO VERMELHO)"),
+          explicacao: `A taxa contratada (${txContrato.toFixed(2)}% a.m.) representa ${razao.toFixed(2)}x a taxa média do BACEN (${txMedia.toFixed(2)}% a.m.).`
+        },
+        matrizPericial: matrizSimulada,
         cenarios: {
-          A: { nome: "Original", taxaAplicadaMensal: p.taxaMensalContrato, novaParcela: pmt, reducaoParcela: 0, indebitoAplicado: 0, reducaoSaldoDevedor: 0, proveitoTotalEstimado: 0, liquidoCliente: 0, totalDevidoContrato: pmt * n },
-          C: { nome: "Limite STJ (1,5x)", taxaAplicadaMensal: p.taxaMediaMercado * 1.5, novaParcela: novaPmt, reducaoParcela: red, indebitoAplicado: ind, reducaoSaldoDevedor: red * (n - pagas), proveitoTotalEstimado: prov, liquidoCliente: prov * 0.8, totalDevidoContrato: novaPmt * n }
+          A: { nome: "Original", taxaAplicadaMensal: txContrato, novaParcela: pmt, reducaoParcela: 0, indebitoAplicado: 0, reducaoSaldoDevedor: 0, proveitoTotalEstimado: 0, liquidoCliente: 0, totalDevidoContrato: pmt * n },
+          C: { nome: "Limite STJ (1,5x)", taxaAplicadaMensal: txMedia * 1.5, novaParcela: novaPmt, reducaoParcela: red, indebitoAplicado: ind, reducaoSaldoDevedor: red * (n - pagas), proveitoTotalEstimado: prov, liquidoCliente: prov * 0.8, totalDevidoContrato: novaPmt * n }
         }
       });
     }

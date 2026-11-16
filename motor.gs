@@ -560,6 +560,27 @@ function calcularRevisionalCompleta(params) {
     },
     alertaComprometimento: alertaComprometimento,
     semaforo: semaforo,
+    matrizPericial: gerarMatrizPericial(
+      {
+        valorLiberado: pv,
+        prazo: n,
+        valorParcela: pmtOriginal,
+        taxaDeclaradaMensal: taxaDeclarada,
+        taxaDeclaradaAnual: taxaMensalParaAnual(taxaDeclarada),
+        taxaImplicitaMensal: taxaImplicita,
+        taxaImplicitaAnual: taxaMensalParaAnual(taxaImplicita),
+        taxaMediaBCBMensal: taxaMedia,
+        taxaMediaBCBAnual: taxaMensalParaAnual(taxaMedia),
+        razaoTaxaMercado: taxaMedia > 0 ? taxaImplicita / taxaMedia : 1.0,
+        tarifasExpurgadas: tarifas,
+        seguroExpurgado: seguro,
+        totalExpurgos: totalExpurgos,
+        parcelasPagas: parcelasPagas,
+        parcelasVincendas: n - parcelasPagas
+      },
+      alertaComprometimento,
+      { A: cenarioA, B: cenarioB, C: cenarioC, D: cenarioD, E: cenarioE }
+    ),
     cenarios: {
       A: cenarioA,
       B: cenarioB,
@@ -637,6 +658,181 @@ function avaliarSemaforo(dados) {
     explicacao: "A taxa praticada (" + taxaContrato.toFixed(2) + "% a.m.) representa apenas " + razao.toFixed(2) + "x a taxa média de mercado do BCB (" + taxaMedia.toFixed(2) + "% a.m.), patamar que a Segunda Seção do Superior Tribunal de Justiça (STJ) pacificamente considera lícito e não abusivo.",
     avisoLegal: "Triagem preliminar orientativa baseada em precedentes jurisprudenciais. Não constitui garantia de êxito nem substitui perícia contábil forense."
   };
+}
+
+/**
+ * Gera a Matriz Pericial Objetiva de Probabilidade de Procedência dos pedidos revisionais.
+ * Fundamentada exclusivamente em dados matemáticos reais do contrato e precedentes consolidados do STJ.
+ * 
+ * @param {Object} dc - Dados do contrato.
+ * @param {Object} alertaComprometimento - Alerta de comprometimento de renda.
+ * @param {Object} cenarios - Cenários calculados.
+ * @returns {Array<Object>} Lista de itens periciados com probabilidade e fundamentação técnica.
+ */
+function gerarMatrizPericial(dc, alertaComprometimento, cenarios) {
+  const razao = dc.razaoTaxaMercado || 1.0;
+  const matriz = [];
+
+  // 1. LIMITAÇÃO DA TAXA DE JUROS REMUNERATÓRIOS
+  let probJuros = "BAIXA";
+  let classeJuros = "baixa";
+  let parecerJuros = "";
+
+  if (razao >= 2.0) {
+    probJuros = "MUITO ALTA (Abusividade Qualificada)";
+    classeJuros = "alta";
+    parecerJuros = "A taxa efetiva implícita (" + dc.taxaImplicitaMensal.toFixed(2) + "% a.m.) é " + razao.toFixed(2) + "x superior à média do BACEN (" + dc.taxaMediaBCBMensal.toFixed(2) + "% a.m.), caracterizando vantagem manifestamente excessiva e lesão patrimonial ao consumidor (Art. 39, V e 51, IV do CDC). Probabilidade máxima de acolhimento do pedido com redução para a média do mercado.";
+  } else if (razao >= 1.5) {
+    probJuros = "ALTA (Padrão Repetitivo STJ)";
+    classeJuros = "alta";
+    parecerJuros = "A taxa do contrato (" + dc.taxaImplicitaMensal.toFixed(2) + "% a.m.) atinge " + razao.toFixed(2) + "x a média do BACEN (" + dc.taxaMediaBCBMensal.toFixed(2) + "% a.m.), atendendo rigorosamente ao critério objetivo consolidado pelo STJ no REsp 1.061.530/RS (Tema 247). A procedência para limitar os juros à média oficial possui ampla sustentação jurisprudencial.";
+  } else if (razao >= 1.3) {
+    probJuros = "MÉDIA (Margem de Discricionariedade)";
+    classeJuros = "media";
+    parecerJuros = "A taxa (" + dc.taxaImplicitaMensal.toFixed(2) + "% a.m.) está " + razao.toFixed(2) + "x acima do BACEN (" + dc.taxaMediaBCBMensal.toFixed(2) + "% a.m.). Embora onerosa, alguns julgadores toleram oscilações de até 1,5x. O êxito dependerá da sensibilidade do juízo competente e da comprovação de vulnerabilidade econômica do mutuário.";
+  } else if (razao >= 1.0) {
+    probJuros = "BAIXA / IMPROVÁVEL";
+    classeJuros = "baixa";
+    parecerJuros = "A taxa praticada (" + dc.taxaImplicitaMensal.toFixed(2) + "% a.m.) acompanha a média de mercado do BACEN (" + dc.taxaMediaBCBMensal.toFixed(2) + "% a.m., disparidade de apenas " + razao.toFixed(2) + "x). A Súmula 382/STJ veda expressamente a redução unicamente pela alegação de juros acima de 12% ao ano se alinhados ao mercado financeiro.";
+  } else {
+    probJuros = "IMPROCEDENTE (Sem Objeto)";
+    classeJuros = "inaplicavel";
+    parecerJuros = "A taxa contratual (" + dc.taxaImplicitaMensal.toFixed(2) + "% a.m.) é menor que a média de mercado divulgada pelo Banco Central (" + dc.taxaMediaBCBMensal.toFixed(2) + "% a.m.). Não há abusividade contábil a ser arguida neste ponto.";
+  }
+
+  matriz.push({
+    pedido: "1. Limitação dos Juros Remuneratórios à Média BACEN",
+    fatoReal: "Taxa Contrato: " + dc.taxaImplicitaMensal.toFixed(2) + "% a.m. (" + dc.taxaImplicitaAnual.toFixed(2) + "% a.a.) | BACEN: " + dc.taxaMediaBCBMensal.toFixed(2) + "% a.m. | Razão: " + razao.toFixed(2) + "x",
+    criterioSTJ: "Tema 247/STJ e Súmula 382/STJ (REsp 1.061.530/RS) - Patamar de 1,5x a taxa média",
+    probabilidade: probJuros,
+    classe: classeJuros,
+    fundamentacaoPericial: parecerJuros
+  });
+
+  // 2. VENDA CASADA DE SEGURO PRESTAMISTA
+  let probSeguro = "INAPLICÁVEL";
+  let classeSeguro = "inaplicavel";
+  let parecerSeguro = "";
+
+  if (dc.seguroExpurgado > 0) {
+    probSeguro = "ALTA (Tema Vinculante 972/STJ)";
+    classeSeguro = "alta";
+    parecerSeguro = "Consta expressamente no contrato a inclusão de Seguro Prestamista financiado no montante de R$ " + dc.seguroExpurgado.toFixed(2) + ". Conforme fixado no Tema 972 do STJ, o consumidor não pode ser compelido a contratar seguro com a instituição ou seguradora imposta, restando configurada venda casada ilícita (Art. 39, I do CDC) com probabilidade altíssima de restituição integral.";
+  } else {
+    probSeguro = "INAPLICÁVEL (Sem Fato Gerador)";
+    classeSeguro = "inaplicavel";
+    parecerSeguro = "Não foi identificada contratação de seguro prestamista no instrumento periciado. Pelo rigor técnico contábil, não se deve formular pedido desprovido de base material nos autos.";
+  }
+
+  matriz.push({
+    pedido: "2. Expurgo e Restituição de Seguro Prestamista (Venda Casada)",
+    fatoReal: dc.seguroExpurgado > 0 ? "Seguro prestamista embutido e financiado no valor de R$ " + dc.seguroExpurgado.toFixed(2) : "Nenhum seguro prestamista cobrado no instrumento (R$ 0,00)",
+    criterioSTJ: "Tema Repetitivo 972/STJ (REsp 1.639.320/SP) e Art. 39, I do CDC",
+    probabilidade: probSeguro,
+    classe: classeSeguro,
+    fundamentacaoPericial: parecerSeguro
+  });
+
+  // 3. TARIFAS ADMINISTRATIVAS ACESSÓRIAS (TAC, CADASTRO, SERVIÇOS)
+  let probTarifas = "INAPLICÁVEL";
+  let classeTarifas = "inaplicavel";
+  let parecerTarifas = "";
+
+  if (dc.tarifasExpurgadas > 0) {
+    probTarifas = "MÉDIA A ALTA (Favorável se Renovação)";
+    classeTarifas = "alta";
+    parecerTarifas = "Consta cobrança de tarifas no total de R$ " + dc.tarifasExpurgadas.toFixed(2) + ". Conforme a Súmula 566/STJ e Tema 618/STJ, a tarifa de cadastro só é permitida no primeiro contato contratual com a instituição. Em operações de crédito pessoal de quem já possui conta corrente ou em renegociações sucessivas, a cobrança reiterada é ilegítima.";
+  } else {
+    probTarifas = "INAPLICÁVEL (Sem Fato Gerador)";
+    classeTarifas = "inaplicavel";
+    parecerTarifas = "Não há destaque de tarifas acessórias ou taxas operacionais no contrato.";
+  }
+
+  matriz.push({
+    pedido: "3. Ilegalidade de Tarifas Administrativas Acessórias",
+    fatoReal: dc.tarifasExpurgadas > 0 ? "Tarifas acessórias cobradas no total de R$ " + dc.tarifasExpurgadas.toFixed(2) : "Nenhuma tarifa acessória informada (R$ 0,00)",
+    criterioSTJ: "Súmula 566/STJ e Tema 618/STJ (REsp 1.251.331/RS)",
+    probabilidade: probTarifas,
+    classe: classeTarifas,
+    fundamentacaoPericial: parecerTarifas
+  });
+
+  // 4. MÍNIMO EXISTENCIAL E SUPERENDIVIDAMENTO
+  let probRenda = "NÃO AVALIADO";
+  let classeRenda = "inaplicavel";
+  let parecerRenda = "";
+
+  if (alertaComprometimento && alertaComprometimento.rendaLiquida > 0) {
+    const perc = alertaComprometimento.percentualComprometimento;
+    if (perc > 35) {
+      probRenda = "ALTA (Liminar de Retenção Concessível)";
+      classeRenda = "alta";
+      parecerRenda = "A parcela de R$ " + dc.valorParcela.toFixed(2) + " absorve " + perc.toFixed(1) + "% da renda líquida comprovada (R$ " + alertaComprometimento.rendaLiquida.toFixed(2) + "), excedendo expressivamente o limite de 30% a 35%. Forte probabilidade de obtenção de tutela de urgência com base no princípio da dignidade da pessoa humana e na Lei 14.181/2021 (Superendividamento).";
+    } else if (perc >= 30) {
+      probRenda = "MÉDIA (Faixa Limítrofe)";
+      classeRenda = "media";
+      parecerRenda = "O comprometimento de " + perc.toFixed(1) + "% situa-se na margem limítrofe prudencial (30% a 35%). A liminar dependerá da comprovação de outros débitos concomitantes que comprometam os proventos alimentares.";
+    } else {
+      probRenda = "BAIXA (Margem Regular)";
+      classeRenda = "baixa";
+      parecerRenda = "A parcela compromete " + perc.toFixed(1) + "% da renda mensal, enquadrando-se dentro do teto legal de consignação.";
+    }
+  } else {
+    parecerRenda = "Renda líquida não informada para cálculo objetivo do comprometimento salarial.";
+  }
+
+  matriz.push({
+    pedido: "4. Limitação dos Descontos por Superendividamento",
+    fatoReal: alertaComprometimento && alertaComprometimento.rendaLiquida > 0
+      ? "Parcela: R$ " + dc.valorParcela.toFixed(2) + " | Renda: R$ " + alertaComprometimento.rendaLiquida.toFixed(2) + " | Comprometimento: " + alertaComprometimento.percentualComprometimento.toFixed(1) + "%"
+      : "Renda líquida do mutuário não declarada no cadastro inicial",
+    criterioSTJ: "Lei 14.181/2021 (Superendividamento) e Tema 1085/STJ (Teto de 30% a 35%)",
+    probabilidade: probRenda,
+    classe: classeRenda,
+    fundamentacaoPericial: parecerRenda
+  });
+
+  // 5. REPETIÇÃO DO INDÉBITO (RESTITUIÇÃO DE PARCELAS PAGAS)
+  let probIndebito = "INAPLICÁVEL";
+  let classeIndebito = "inaplicavel";
+  let parecerIndebito = "";
+
+  if (dc.parcelasPagas > 0) {
+    if (razao >= 1.3 || dc.totalExpurgos > 0) {
+      probIndebito = "ALTA (Simples) / MÉDIA (Dobro)";
+      classeIndebito = "alta";
+      parecerIndebito = "Existem " + dc.parcelasPagas + " parcelas quitadas com encargos excessivos. A restituição na forma simples (com amortização direta no saldo devedor) decorre naturalmente da revisão da taxa. A repetição em dobro dependerá da demonstração da má-fé ou conduta contrária à boa-fé objetiva (EAREsp 676.608/RJ).";
+    } else {
+      probIndebito = "BAIXA (Sem Indébito Relevante)";
+      classeIndebito = "baixa";
+      parecerIndebito = "Como a taxa praticada não apresenta disparidade substancial frente à média do BACEN, não há saldo expressivo recolhido indevidamente.";
+    }
+  } else {
+    probIndebito = "INAPLICÁVEL (0 Parcelas Pagas)";
+    classeIndebito = "inaplicavel";
+    parecerIndebito = "Nenhuma parcela foi paga até o momento. O proveito consistirá exclusivamente no recálculo do saldo devedor vincendo.";
+  }
+
+  matriz.push({
+    pedido: "5. Repetição de Indébito (Restituição de Parcelas Pagas)",
+    fatoReal: dc.parcelasPagas > 0 ? dc.parcelasPagas + " parcelas comprovadamente quitadas de um total de " + dc.prazo : "Nenhuma parcela paga até o momento (0 quitadas)",
+    criterioSTJ: "Art. 42, § único do CDC e EAREsp 676.608/RJ da Corte Especial do STJ",
+    probabilidade: probIndebito,
+    classe: classeIndebito,
+    fundamentacaoPericial: parecerIndebito
+  });
+
+  // 6. CAPITALIZAÇÃO DIÁRIA DE JUROS (ANATOCISMO)
+  matriz.push({
+    pedido: "6. Expurgo da Capitalização de Juros (Anatocismo)",
+    fatoReal: "Taxa Mensal: " + dc.taxaDeclaradaMensal.toFixed(2) + "% | Taxa Anual Declarada: " + dc.taxaDeclaradaAnual.toFixed(2) + "%",
+    criterioSTJ: "Súmula 541/STJ (Validade da taxa anual superior a doze vezes a mensal)",
+    probabilidade: "BAIXA (Tese Predominantemente Rejeitada pelo STJ)",
+    classe: "baixa",
+    fundamentacaoPericial: "O STJ consolidou que a mera previsão numérica de taxa anual superior ao duodécuplo da mensal é suficiente para legitimar a capitalização periódica. O perito orienta que fundamentar a ação unicamente no anatocismo resulta em improcedência; a via técnica correta e vitoriosa é a limitação à taxa média de mercado do BACEN."
+  });
+
+  return matriz;
 }
 
 /**
@@ -744,6 +940,7 @@ if (typeof module !== "undefined" && module.exports) {
     gerarCronogramaGauss: gerarCronogramaGauss,
     calcularRevisionalCompleta: calcularRevisionalCompleta,
     avaliarSemaforo: avaliarSemaforo,
+    gerarMatrizPericial: gerarMatrizPericial,
     aplicarCorrecaoEJuros: aplicarCorrecaoEJuros,
     formatarDataISO: formatarDataISO
   };
