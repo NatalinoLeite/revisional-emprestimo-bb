@@ -330,7 +330,7 @@ function GeminiProvider() {
       );
     }
 
-    const model = obterPropriedadeScript("GEMINI_MODEL") || "gemini-2.5-flash";
+    const model = obterPropriedadeScript("GEMINI_MODEL") || "gemini-3.8-flash";
     const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
 
     const payload = {
@@ -374,7 +374,7 @@ function GeminiProvider() {
       throw new Error("Chave GEMINI_API_KEY não configurada nas Script Properties.");
     }
 
-    const model = obterPropriedadeScript("GEMINI_MODEL") || "gemini-2.5-flash";
+    const model = obterPropriedadeScript("GEMINI_MODEL") || "gemini-3.8-flash";
     const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
 
     const payload = {
