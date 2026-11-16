@@ -141,6 +141,31 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Modal de Configuração de Chaves (BYOK) */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6); display: flex; align-items: center;
+      justify-content: center; z-index: 10000; padding: 16px;
+    }
+    .modal-card {
+      background: #ffffff; border-radius: var(--radius); max-width: 520px;
+      width: 100%; box-shadow: var(--shadow-md); overflow: hidden;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .modal-close {
+      background: none; border: none; font-size: 1.5rem; line-height: 1;
+      color: var(--text-muted); cursor: pointer; padding: 0 4px;
+    }
+    .modal-close:hover { color: var(--text-main); }
+
     @media print {
       body { background: #fff; padding: 0; }
       .app-header, .stepper, .btn-toolbar, .upload-area { display: none !important; }
@@ -159,7 +184,10 @@
         <span>⚖️ Revisional de Empréstimos</span>
         <span class="app-badge">BB Crédito Salário</span>
       </div>
-      <div class="user-badge">
+      <div class="user-badge" style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="abrirModalChaves()" style="padding: 5px 12px; font-size: 0.8rem; cursor: pointer; border-radius: 6px; border: 1px solid var(--border);">
+          ⚙️ Chaves de IA <span id="status-chaves-badge" style="color:#059669; font-weight: 700; margin-left: 2px;">●</span>
+        </button>
         <span>Pronto para Vercel & GitHub</span> | <span style="color:#059669; font-weight:600;">● Online</span>
       </div>
     </header>
@@ -224,6 +252,9 @@
         <div class="upload-icon">📄</div>
         <div class="upload-text">Clique ou arraste o contrato bancário (PDF ou imagem) aqui</div>
         <div class="upload-subtext">A IA (Gemini API) lerá e preencherá os campos automaticamente</div>
+        <div style="margin-top: 10px; font-size: 0.78rem; color: var(--primary);">
+          ⚙️ Chave de IA configurada no navegador. <a href="javascript:void(0)" onclick="event.stopPropagation(); abrirModalChaves();" style="text-decoration: underline; font-weight: 600; color: var(--primary);">Gerenciar Chaves de IA &rarr;</a>
+        </div>
         <input type="file" id="input-arquivo" accept="application/pdf,image/*" style="display: none;" onchange="aoCarregarArquivo(event)">
       </div>
 
@@ -446,6 +477,71 @@
     </div>
   </div>
 
+  <!-- MODAL DE CONFIGURAÇÃO DE CHAVES DE IA (BYOK) -->
+  <div id="modal-chaves" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          ⚙️ Configurações de IA & Chaves de API
+        </h3>
+        <button type="button" onclick="fecharModalChaves()" class="modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px;">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          As chaves são salvas com segurança no <b>armazenamento local (localStorage)</b> do seu próprio navegador. Elas não ficam expostas no GitHub e funcionam diretamente na Vercel e no servidor local.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Chave Google Gemini API (Recomendada para PDFs) *</span>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="font-size: 0.75rem; color: var(--primary);">Obter chave gratuita &rarr;</a>
+          </label>
+          <div style="position: relative;">
+            <input type="password" id="cfg-gemini-key" class="form-control" placeholder="AQ... ou AIzaSy...">
+            <button type="button" onclick="alternarVisibilidadeChave('cfg-gemini-key')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 0.95rem;">👁️</button>
+          </div>
+          <small style="font-size: 0.75rem; color: var(--text-muted);">Suporta leitura de PDFs de contratos e imagens.</small>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">
+            <span>Modelo Gemini</span>
+          </label>
+          <select id="cfg-gemini-model" class="form-control">
+            <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (Ultra-rápido & Atualizado - Recomendado)</option>
+            <option value="gemini-flash-lite-latest">gemini-flash-lite-latest</option>
+            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: flex; justify-content: space-between;">
+            <span>Chave OpenAI API (ChatGPT) (Opcional)</span>
+            <a href="https://platform.openai.com/api-keys" target="_blank" style="font-size: 0.75rem; color: var(--primary);">Obter chave &rarr;</a>
+          </label>
+          <div style="position: relative;">
+            <input type="password" id="cfg-openai-key" class="form-control" placeholder="sk-...">
+            <button type="button" onclick="alternarVisibilidadeChave('cfg-openai-key')" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 0.95rem;">👁️</button>
+          </div>
+          <small style="font-size: 0.75rem; color: var(--text-muted);">Utilizada para fallback com fotos ou imagens de contratos.</small>
+        </div>
+
+        <div class="alert-box alert-info" id="cfg-status-info" style="display: none; margin-top: 14px; margin-bottom: 0;">
+          <span id="cfg-status-texto">Chaves salvas com sucesso no navegador!</span>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+        <button type="button" class="btn btn-secondary" onclick="limparChavesSalvas()" style="font-size: 0.8rem; padding: 6px 12px;">Limpar Chaves</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalChaves()">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="salvarModalChaves()">Salvar Chaves</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="spinner" class="spinner-overlay">
     <div class="spinner"></div>
     <div id="sp-txt" style="font-weight: 600;">Processando...</div>
@@ -499,10 +595,20 @@
       reader.onload = async function() {
         try {
           const base64 = reader.result.split(",")[1];
+          const customGeminiKey = localStorage.getItem("revisional_gemini_key") || "";
+          const customOpenaiKey = localStorage.getItem("revisional_openai_key") || "";
+          const customModel = localStorage.getItem("revisional_gemini_model") || "gemini-3.1-flash-lite";
+
           const resp = await fetch("/api/extrair", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ arquivoBase64: base64, mimeType: file.type || "application/pdf" })
+            body: JSON.stringify({
+              arquivoBase64: base64,
+              mimeType: file.type || "application/pdf",
+              customGeminiKey: customGeminiKey,
+              customOpenaiKey: customOpenaiKey,
+              customModel: customModel
+            })
           });
 
           const data = await resp.json().catch(() => ({ sucesso: false, erro: "Falha ao processar resposta do servidor HTTP (" + resp.status + ")" }));
@@ -706,8 +812,93 @@
       document.getElementById("spinner").style.display = "none";
     }
 
+    // Gerenciamento de Chaves de API (BYOK - Bring Your Own Key)
+    const DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite";
+
+    function carregarChavesSalvas() {
+      const g = localStorage.getItem("revisional_gemini_key");
+      const o = localStorage.getItem("revisional_openai_key");
+      let m = localStorage.getItem("revisional_gemini_model");
+
+      if (!m) {
+        m = DEFAULT_GEMINI_MODEL;
+        localStorage.setItem("revisional_gemini_model", m);
+      }
+
+      atualizarIndicadorChaves(!!(g || o));
+    }
+
+    function atualizarIndicadorChaves(ativo) {
+      const b = document.getElementById("status-chaves-badge");
+      if (b) {
+        b.style.color = ativo ? "#059669" : "#f59e0b";
+        b.title = ativo ? "Chave de IA configurada no navegador" : "Chave de IA não configurada (clique para configurar)";
+      }
+    }
+
+    function abrirModalChaves() {
+      document.getElementById("cfg-gemini-key").value = localStorage.getItem("revisional_gemini_key") || "";
+      document.getElementById("cfg-openai-key").value = localStorage.getItem("revisional_openai_key") || "";
+      document.getElementById("cfg-gemini-model").value = localStorage.getItem("revisional_gemini_model") || DEFAULT_GEMINI_MODEL;
+      document.getElementById("cfg-status-info").style.display = "none";
+      document.getElementById("modal-chaves").style.display = "flex";
+    }
+
+    function fecharModalChaves() {
+      document.getElementById("modal-chaves").style.display = "none";
+    }
+
+    function alternarVisibilidadeChave(id) {
+      const input = document.getElementById(id);
+      if (input) {
+        input.type = input.type === "password" ? "text" : "password";
+      }
+    }
+
+    function salvarModalChaves() {
+      const g = document.getElementById("cfg-gemini-key").value.trim();
+      const o = document.getElementById("cfg-openai-key").value.trim();
+      const m = document.getElementById("cfg-gemini-model").value;
+
+      if (g) localStorage.setItem("revisional_gemini_key", g);
+      else localStorage.removeItem("revisional_gemini_key");
+
+      if (o) localStorage.setItem("revisional_openai_key", o);
+      else localStorage.removeItem("revisional_openai_key");
+
+      localStorage.setItem("revisional_gemini_model", m);
+
+      atualizarIndicadorChaves(!!(g || o));
+
+      const info = document.getElementById("cfg-status-info");
+      const txt = document.getElementById("cfg-status-texto");
+      info.className = "alert-box alert-success";
+      info.style.display = "flex";
+      txt.innerText = "✅ Configurações de IA salvas com sucesso no seu navegador!";
+
+      setTimeout(() => {
+        fecharModalChaves();
+      }, 700);
+    }
+
+    function limparChavesSalvas() {
+      localStorage.removeItem("revisional_gemini_key");
+      localStorage.removeItem("revisional_openai_key");
+      document.getElementById("cfg-gemini-key").value = "";
+      document.getElementById("cfg-openai-key").value = "";
+      atualizarIndicadorChaves(false);
+      const info = document.getElementById("cfg-status-info");
+      const txt = document.getElementById("cfg-status-texto");
+      info.className = "alert-box alert-warning";
+      info.style.display = "flex";
+      txt.innerText = "Chaves removidas. O sistema usará as variáveis de ambiente se disponíveis.";
+    }
+
     // Inicialização e listeners
     window.addEventListener("DOMContentLoaded", () => {
+      // 0. Carregar chaves salvas no localStorage
+      carregarChavesSalvas();
+
       // 1. Alerta se executado via file://
       if (window.location.protocol === "file:") {
         const banner = document.getElementById("banner-local-file");

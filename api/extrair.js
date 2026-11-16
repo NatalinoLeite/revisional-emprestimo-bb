@@ -22,13 +22,24 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { arquivoBase64, mimeType } = req.body || {};
+    const {
+      arquivoBase64,
+      mimeType,
+      customGeminiKey,
+      customOpenaiKey,
+      customModel,
+      customProvider
+    } = req.body || {};
 
     if (!arquivoBase64 || !mimeType) {
       return res.status(400).json({ sucesso: false, erro: "arquivoBase64 e mimeType são obrigatórios." });
     }
 
-    const provider = (process.env.LLM_PROVIDER || "GEMINI").toUpperCase();
+    const geminiKey = customGeminiKey || process.env.GEMINI_API_KEY;
+    const openaiKey = customOpenaiKey || process.env.OPENAI_API_KEY;
+    const provider = (customProvider || process.env.LLM_PROVIDER || "GEMINI").toUpperCase();
+    const modelEscolhido = customModel || process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+
     let rawDados = null;
     let provedorUtilizado = "";
 
@@ -53,10 +64,10 @@ module.exports = async function handler(req, res) {
       "Apenas o JSON, sem markdown ou explicações.";
 
     // 1. TENTATIVA COM GEMINI (suporta nativamente PDF e imagens)
-    if (process.env.GEMINI_API_KEY) {
-      const apiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey) {
+      const apiKey = geminiKey;
       const modelosParaTentar = [
-        process.env.GEMINI_MODEL,
+        modelEscolhido,
         "gemini-3.1-flash-lite",
         "gemini-flash-lite-latest",
         "gemini-3.8-flash"
@@ -114,10 +125,9 @@ module.exports = async function handler(req, res) {
     }
 
     // 2. TENTATIVA COM OPENAI (CHATGPT) (apenas para imagens, pois OpenAI não suporta PDFs como image_url)
-    if (!rawDados && process.env.OPENAI_API_KEY) {
+    if (!rawDados && openaiKey) {
       if (mimeType.startsWith("image/")) {
         try {
-          const openaiKey = process.env.OPENAI_API_KEY;
           const openaiModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
           const urlOpenAI = "https://api.openai.com/v1/chat/completions";
 
@@ -174,8 +184,8 @@ module.exports = async function handler(req, res) {
     }
 
     if (!rawDados) {
-      const msg = !process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY
-        ? "Nenhuma chave de IA (GEMINI_API_KEY ou OPENAI_API_KEY) configurada nas variáveis de ambiente. Configure no painel da Vercel ou no arquivo .env."
+      const msg = !geminiKey && !openaiKey
+        ? "Nenhuma chave de IA configurada. Clique em '⚙️ Configurar Chaves de IA' no topo da tela para inserir sua chave do Google Gemini ou OpenAI."
         : "Não foi possível extrair os dados do documento com a IA. O documento pode ser muito pesado, protegido por senha ou a IA está temporariamente indisponível. Você pode preencher os campos manualmente no Passo 2.";
       throw new Error(msg);
     }
