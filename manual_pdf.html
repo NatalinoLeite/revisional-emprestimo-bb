@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Manual do Usuário - Calculadora Revisional de Empréstimos</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 18mm 16mm 18mm 16mm;
+      @bottom-right {
+        content: counter(page);
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+      line-height: 1.55;
+      font-size: 10pt;
+    }
+    .header-doc {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .header-doc h1 {
+      font-size: 18pt;
+      color: #0f172a;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .header-doc .subtitle {
+      font-size: 10.5pt;
+      color: #2563eb;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .header-doc .meta {
+      font-size: 8.5pt;
+      color: #64748b;
+      text-align: right;
+    }
+    .badge-oficial {
+      background: #eff6ff;
+      color: #1e40af;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 8pt;
+      font-weight: 700;
+      border: 1px solid #bfdbfe;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    h2 {
+      font-size: 12pt;
+      color: #0f172a;
+      border-left: 4px solid #2563eb;
+      padding-left: 8px;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 10.5pt;
+      color: #1e3a8a;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-weight: 700;
+      page-break-after: avoid;
+    }
+    p {
+      margin-bottom: 8px;
+      text-align: justify;
+    }
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 10px;
+    }
+    li {
+      margin-bottom: 4px;
+    }
+    .box-info {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid #0284c7;
+      padding: 10px 14px;
+      border-radius: 4px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    .box-success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #16a34a;
+      padding: 10px 14px;
+      border-radius: 4px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    .box-warning {
+      background: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-left: 4px solid #d97706;
+      padding: 10px 14px;
+      border-radius: 4px;
+      margin: 12px 0;
+      page-break-inside: avoid;
+    }
+    .table-custom {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin: 12px 0 16px 0;
+      page-break-inside: avoid;
+    }
+    .table-custom th {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 6px 8px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .table-custom td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .table-custom tr:nth-child(even) {
+      background: #f8fafc;
+    }
+    .badge-prob {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-alta { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .badge-media { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-baixa { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .badge-inap { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .step-badge {
+      background: #2563eb;
+      color: #ffffff;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 8.5pt;
+      margin-right: 6px;
+    }
+    .footer-doc {
+      margin-top: 24px;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 8px;
+      font-size: 8pt;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <div class="header-doc">
+    <div>
+      <span class="badge-oficial">MANUAL OFICIAL DO USUÁRIO</span>
+      <h1>Calculadora Revisional de Empréstimos</h1>
+      <div class="subtitle">Guia Operacional Passo a Passo e Interpretação do Laudo Pericial</div>
+    </div>
+    <div class="meta">
+      <b>Versão:</b> 2.0 (STJ & BACEN)<br>
+      <b>Destinado a:</b> Advogados, Peritos e Contadores<br>
+      <b>Atualizado em:</b> 2026
+    </div>
+  </div>
+
+  <p>
+    Este manual orienta o operador na utilização prática da <b>Calculadora Revisional de Empréstimos e Financiamentos</b>. O sistema foi desenvolvido para auditar contratos bancários de forma 100% matemática e objetiva, confrontando as taxas cobradas com os parâmetros oficiais do <b>Banco Central do Brasil (BACEN)</b> e a jurisprudência pacificada do <b>Superior Tribunal de Justiça (STJ)</b>.
+  </p>
+
+  <!-- SEÇÃO 1: ACESSO E CONFIGURAÇÃO -->
+  <h2>1. Como Acessar e Configurar</h2>
+  <p>A aplicação funciona tanto em nuvem (Vercel) quanto em rede local ou computadores individuais:</p>
+  <ul>
+    <li><b>Acesso Online (Nuvem):</b> Acesse o link fornecido da Vercel pelo navegador de qualquer computador ou celular.</li>
+    <li><b>Acesso Local (No Computador):</b> Dê um duplo clique no arquivo <code>iniciar_local.bat</code> e acesse no navegador o endereço <code>http://localhost:3000</code>.</li>
+  </ul>
+
+  <div class="box-info">
+    <b>⚙️ Ativação da Leitura Automática de Contratos (Inteligência Artificial):</b><br>
+    No canto superior direito da tela, clique em <b>"⚙️ Chaves de IA"</b> e insira sua chave gratuita do <b>Google Gemini</b> (obtida no Google AI Studio). As chaves são armazenadas com segurança no próprio navegador e permitem que o sistema leia Cédulas de Crédito Bancário (CCB) em PDF ou imagem automaticamente.
+  </div>
+
+  <!-- SEÇÃO 2: FLUXO DE 4 ETAPAS -->
+  <h2>2. Passo a Passo Operacional (O Wizard em 4 Etapas)</h2>
+
+  <h3><span class="step-badge">1</span> Passo 1: Identificação do Cliente e Processo</h3>
+  <p>Informe os dados essenciais para identificação do laudo pericial contábil:</p>
+  <ul>
+    <li><b>Nome do Cliente:</b> Nome completo do titular do contrato.</li>
+    <li><b>CPF:</b> Documento do titular (o sistema mascara automaticamente no laudo para proteção da LGPD).</li>
+    <li><b>Processo Judicial:</b> Numeração do processo ou <i>"Fase Pré-Processual"</i> para pareceres prévios.</li>
+    <li><b>Renda Líquida Mensal:</b> <u>Campo fundamental</u>. Informe o salário líquido do contracheque/holerite. O sistema usa esse número para confrontar o valor da prestação e apurar a margem de <b>Superendividamento (Lei 14.181/2021)</b>.</li>
+  </ul>
+
+  <h3><span class="step-badge">2</span> Passo 2: Extração e Conferência dos Dados do Contrato</h3>
+  <p>Você pode carregar o contrato de duas formas:</p>
+  <ul>
+    <li><b>Automático via IA:</b> Arraste o PDF ou foto da CCB para a área de upload. A IA lerá o banco, a modalidade, data, valor liberado, prazo, valor da parcela, taxa de juros, TAC e seguro prestamista.</li>
+    <li><b>Manual / Conferência:</b> Confira os dados e informe obrigatoriamente as <b>Parcelas Já Pagas</b> (para cálculo da restituição de indébito).</li>
+  </ul>
+
+  <h3><span class="step-badge">3</span> Passo 3: Auditoria das Taxas Oficiais do BACEN</h3>
+  <p>
+    Ao avançar, o sistema consulta diretamente as APIs públicas do Banco Central (Séries SGS e Olinda OData). Ele recupera a <b>taxa média de mercado</b> praticada pelos bancos na época da contratação e calcula a <b>Taxa Real Oculta (Implícita)</b> pelo algoritmo numérico de Newton-Raphson, expondo a disparidade exata frente à média oficial.
+  </p>
+
+  <h3><span class="step-badge">4</span> Passo 4: Resultados, Cenários e Laudo Pericial</h3>
+  <p>O sistema processa o cálculo completo e exibe a tela de resultado pericial contendo o semáforo de viabilidade, métricas financeiras, 6 cenários comparativos e a Matriz Pericial de Procedência.</p>
+
+  <!-- QUEBRA DE PÁGINA PARA A PARTE PERICIAL -->
+  <div class="page-break"></div>
+
+  <!-- SEÇÃO 3: RESULTADOS E CENÁRIOS -->
+  <h2>3. Como Interpretar os Resultados</h2>
+
+  <div class="box-success">
+    <b>🟢 Semáforo Verde (Alta Viabilidade):</b> A taxa do contrato supera $1,5\times$ a média do BACEN ou o proveito financeiro é expressivo. Ação altamente recomendada nos moldes do Tema 247/STJ.<br>
+    <b>🟡 Semáforo Amarelo (Viabilidade Moderada):</b> Taxa entre $1,3\times$ e $1,5\times$ a média, ou viabilidade concentrada no expurgo de seguro prestamista e tarifas abusivas.<br>
+    <b>🔴 Semáforo Vermelho (Baixa Viabilidade):</b> Taxa de juros alinhada à média do BACEN. A Súmula 382/STJ orienta que a revisão é improvável apenas por taxa isolada.
+  </div>
+
+  <h3>Tabela de 6 Cenários Comparativos</h3>
+  <p>O sistema recalcula a operação em 6 cenários simultâneos para respaldar a estratégia jurídica:</p>
+  <ul>
+    <li><b>Cenário A (Original):</b> As condições pactuadas com o banco (valor original).</li>
+    <li><b>Cenário B (Taxa Média BACEN - 1,0x):</b> Substituição integral dos juros pela média oficial do mercado.</li>
+    <li><b>Cenário C (Critério STJ - 1,5x):</b> Limitação a uma vez e meia a média (critério mais aceito e deferido pelos tribunais).</li>
+    <li><b>Cenário D (Abusividade Grave - 2,0x):</b> Limitação para contratos com juros desproporcionais e abusividade manifesta.</li>
+    <li><b>Cenário E (Expurgo de Seguro e Tarifas):</b> Abatimento do seguro prestamista e de tarifas operacionais no valor líquido financiado.</li>
+    <li><b>Cenário COMBINADO:</b> Soma da Taxa Média do BACEN com o expurgo total de tarifas e seguros (máximo proveito econômico).</li>
+  </ul>
+
+  <!-- SEÇÃO 4: MATRIZ PERICIAL DE PROCEDÊNCIA -->
+  <h2>4. Triagem Pericial Contábil (Matriz STJ)</h2>
+  <p>
+    Para evitar aventuras jurídicas e pedidos infundados que gerem sucumbência, o perito avalia a probabilidade objetiva de cada pretensão com base estrita no contrato:
+  </p>
+
+  <table class="table-custom">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Pretensão Revisional</th>
+        <th style="width: 30%;">Fato Contratual Auditado</th>
+        <th style="width: 25%;">Critério STJ / Base Legal</th>
+        <th style="width: 20%; text-align: center;">Probabilidade</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>1. Limitação dos Juros</b></td>
+        <td>Taxa efetiva vs. Média oficial BACEN</td>
+        <td>Tema 247/STJ e Súmula 382/STJ</td>
+        <td style="text-align: center;"><span class="badge-prob badge-alta">ALTA / MUITO ALTA</span></td>
+      </tr>
+      <tr>
+        <td><b>2. Seguro Prestamista</b></td>
+        <td>Cobrança de prêmio financiado</td>
+        <td>Tema 972/STJ (Venda Casada)</td>
+        <td style="text-align: center;"><span class="badge-prob badge-alta">ALTA (se houver)</span></td>
+      </tr>
+      <tr>
+        <td><b>3. Tarifas (TAC / Cadastro)</b></td>
+        <td>Cobrança de tarifas acessórias</td>
+        <td>Súmula 566/STJ e Tema 618/STJ</td>
+        <td style="text-align: center;"><span class="badge-prob badge-media">MÉDIA A ALTA</span></td>
+      </tr>
+      <tr>
+        <td><b>4. Superendividamento</b></td>
+        <td>Parcela consome > 35% do salário líquido</td>
+        <td>Lei 14.181/2021 e Tema 1085/STJ</td>
+        <td style="text-align: center;"><span class="badge-prob badge-alta">ALTA (Liminar)</span></td>
+      </tr>
+      <tr>
+        <td><b>5. Repetição de Indébito</b></td>
+        <td>Existência de parcelas pagas com sobrepreço</td>
+        <td>Art. 42 CDC e EAREsp 676.608/RJ</td>
+        <td style="text-align: center;"><span class="badge-prob badge-alta">ALTA (Simples)</span></td>
+      </tr>
+      <tr>
+        <td><b>6. Expurgo de Anatocismo</b></td>
+        <td>Taxa anual > 12x taxa mensal declarada</td>
+        <td>Súmula 541/STJ</td>
+        <td style="text-align: center;"><span class="badge-prob badge-baixa">BAIXA (Alerta)</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SEÇÃO 5: GUIA TRABALHADOR CLT -->
+  <h2>5. Guia Prático para Contratos de Trabalhadores CLT</h2>
+  <p>Contratos de trabalhadores com carteira assinada possuem duas frentes de grande êxito:</p>
+  <ul>
+    <li><b>Consignado Privado (Desconto em Folha):</b> Na modalidade, selecione <i>"Crédito pessoal consignado privado - Prefixado"</i>. Por ter garantia da empresa, a taxa média do BACEN é menor, tornando abusividades fáceis de comprovar.</li>
+    <li><b>Débito na Conta Salário (ex.: BB Crédito Salário):</b> Na modalidade, selecione <i>"Crédito pessoal não consignado - Prefixado"</i>. Se o banco consome o salário assim que depositado, ultrapassando 30% a 35% da renda familiar, utilize a apuração da Etapa 1 para embasar pedido de <b>tutela de urgência liminar</b> para impedir a retenção de proventos alimentares (Lei 14.181/2021).</li>
+    <li><b>Seguro Desemprego Embutido:</b> É comum embutirem seguro de perda de renda. Se não foi dada opção de escolher a seguradora fora do banco, a restituição é garantida pelo Tema 972/STJ.</li>
+  </ul>
+
+  <!-- SEÇÃO 6: IMPRESSÃO E PDF -->
+  <h2>6. Como Imprimir ou Salvar o Laudo em PDF</h2>
+  <ol>
+    <li>Na tela de resultados (Passo 4), clique no botão azul <b>"🖨️ Imprimir / Salvar Laudo em PDF"</b>.</li>
+    <li>Na janela de impressão do navegador, selecione <b>"Salvar como PDF"</b> no campo Destino.</li>
+    <li>Certifique-se de ativar a caixa <b>"Gráficos de segundo plano"</b> para que as cores de destaque e tabelas sejam preservadas.</li>
+    <li>Clique em <b>Salvar</b>. O arquivo gerado é um laudo técnico forense completo, pronto para instruir a petição inicial ou notificação extrajudicial.</li>
+  </ol>
+
+  <div class="footer-doc">
+    <span>Calculadora Revisional de Empréstimos Bancários — Sistema Especialista</span>
+    <span>Documento Técnico de Uso Operacional</span>
+  </div>
+
+</body>
+</html>
