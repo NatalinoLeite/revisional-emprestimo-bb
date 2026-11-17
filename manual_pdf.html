@@ -225,8 +225,9 @@
   <h3><span class="step-badge">2</span> Passo 2: Extração e Conferência dos Dados do Contrato</h3>
   <p>Você pode carregar o contrato de duas formas:</p>
   <ul>
-    <li><b>Automático via IA:</b> Arraste o PDF ou foto da CCB para a área de upload. A IA lerá o banco, a modalidade, data, valor liberado, prazo, valor da parcela, taxa de juros, TAC e seguro prestamista.</li>
-    <li><b>Manual / Conferência:</b> Confira os dados e informe obrigatoriamente as <b>Parcelas Já Pagas</b> (para cálculo da restituição de indébito).</li>
+    <li><b>Automático via IA (Zero Alucinação):</b> Arraste o PDF ou foto da CCB para a área de upload. A IA extrai com rigor pericial literal o banco, a modalidade exata, data de contratação, data do 1º vencimento, valor liberado, IOF, prazo, parcela, taxas declaradas, TAC e seguro prestamista.</li>
+    <li><b>Cálculo Exato de Carência:</b> O sistema apura os dias corridos até o primeiro vencimento e capitaliza pro-rata die apenas os dias de carência excedentes aos 30 dias comerciais, impedindo distorções na taxa de juros implícita.</li>
+    <li><b>Trava de Segurança (Guardrail):</b> O sistema confronta a parcela calculada com a parcela do contrato. Caso haja divergência superior a R$ 0,10, emite alerta preventivo para conferência de encargos ou dias de carência.</li>
   </ul>
 
   <h3><span class="step-badge">3</span> Passo 3: Auditoria das Taxas Oficiais do BACEN</h3>

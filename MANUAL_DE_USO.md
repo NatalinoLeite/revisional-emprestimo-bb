@@ -94,22 +94,23 @@ Clique em **"Continuar para o Contrato →"**.
 
 Você pode inserir os dados de duas formas:
 
-1. **Leitura Automática com Inteligência Artificial:**
+1. **Leitura Automática com Inteligência Artificial (Regras Estritas - Zero Alucinação):**
    - Arraste ou clique na área pontilhada para selecionar a **Cédula de Crédito Bancário (CCB)** ou extrato de empréstimo em PDF ou imagem.
-   - O Gemini lerá o documento e preencherá automaticamente todos os campos:
+   - O Gemini lerá o documento e preencherá automaticamente todos os campos de forma literal:
      - Instituição Financeira (ex.: *BCO DO BRASIL S.A.*, *BANCO SANTANDER (BRASIL) S.A.*, etc.)
-     - Modalidade do Crédito
-     - Data da Contratação
-     - Valor Liberado Líquido (R$)
+     - Modalidade do Crédito (título exato da operação, ex.: *Crédito do Trabalhador / Consignado Privado*)
+     - Data da Contratação e Data do 1º Vencimento (Carência)
+     - Valor Liberado Líquido (R$) e IOF Financiado (R$)
      - Prazo total em meses
      - Valor da Parcela mensal (R$)
-     - Taxa Mensal Declarada no contrato (% a.m.)
+     - Taxa Mensal Declarada e Custo Efetivo Total (CET)
      - Tarifas de Abertura / Cadastro (TAC)
      - Seguro Prestamista financiado
 
-2. **Preenchimento Manual / Conferência:**
-   - Confira os dados extraídos pela IA e complete:
-     - **Parcelas Já Pagas:** Quantas parcelas o cliente já quitou até a data atual (necessário para calcular a repetição de indébito e o valor a ser devolvido em dinheiro).
+2. **Cálculo Exato com Carência & Trava de Segurança (Guardrail):**
+   - **Carência Excedente:** O sistema calcula os dias corridos até o primeiro vencimento (ex.: 87 dias) e capitaliza pro-rata die apenas os dias excedentes aos 30 dias comerciais, impedindo que a taxa implícita seja inflada erroneamente.
+   - **Guardrail de Consistência:** Antes de emitir o laudo, o sistema compara a parcela calculada com a parcela do contrato. Caso haja divergência superior a R$ 0,10, emite um alerta de segurança na tela de resultados para averiguação de encargos ou datas.
+   - **Parcelas Já Pagas:** Quantas parcelas o cliente já quitou até a data atual (necessário para apurar a repetição de indébito e o valor a restituir em espécie).
 
 Clique em **"Avançar para Consulta BACEN →"**.
 

@@ -45,6 +45,74 @@ function taxaNominalParaEfetiva(taxaNominal, periodos) {
 }
 
 /**
+ * Calcula a parcela pela Tabela Price considerando o período exato de carência entre
+ * a data da contratação e o primeiro vencimento.
+ *
+ * @param {Object} params
+ * @param {number} params.valorLiberado - Valor líquido liberado.
+ * @param {number} [params.iof=0] - Imposto sobre Operações Financeiras financiado.
+ * @param {number} [params.tarifas=0] - Tarifas acessórias financiadas (TAC, cadastro).
+ * @param {number} [params.seguro=0] - Seguro prestamista financiado.
+ * @param {number} params.taxaMensalPercentual - Taxa mensal em porcentagem (ex.: 3.95).
+ * @param {number} params.numParcelas - Número total de parcelas contratadas.
+ * @param {string} [params.dataContratacao] - Formato 'YYYY-MM-DD'.
+ * @param {string} [params.dataPrimeiraParcela] - Formato 'YYYY-MM-DD'.
+ * @returns {Object} { principal, diasTotais, diasCarenciaExcedente, saldoBase, parcelaCalculada }
+ */
+function calcularParcelaPriceComCarencia(params) {
+  const valorLiberado = Number(params.valorLiberado) || 0;
+  const iof = Number(params.iof) || 0;
+  const tarifas = Number(params.tarifas) || 0;
+  const seguro = Number(params.seguro) || 0;
+  const taxaMensal = Number(params.taxaMensalPercentual) || 0;
+  const numParcelas = parseInt(params.numParcelas, 10) || 0;
+
+  // 1. Capital total financiado real
+  const principal = valorLiberado + iof + tarifas + seguro;
+  const i = taxaMensal / 100;
+
+  if (principal <= 0 || numParcelas <= 0) {
+    return { principal: 0, diasTotais: 30, diasCarenciaExcedente: 0, saldoBase: 0, parcelaCalculada: 0 };
+  }
+
+  // 2. Cálculo exato dos dias corridos até a 1ª parcela
+  let diasTotais = 30;
+  let diasCarenciaExcedente = 0;
+
+  if (params.dataContratacao && params.dataPrimeiraParcela) {
+    const dtInicio = new Date(String(params.dataContratacao).split("T")[0] + "T00:00:00");
+    const dtPrimParcela = new Date(String(params.dataPrimeiraParcela).split("T")[0] + "T00:00:00");
+    if (!isNaN(dtInicio.getTime()) && !isNaN(dtPrimParcela.getTime())) {
+      diasTotais = Math.round((dtPrimParcela - dtInicio) / (1000 * 60 * 60 * 24));
+      // Dias excedentes além do primeiro mês comercial (30 dias)
+      diasCarenciaExcedente = Math.max(0, diasTotais - 30);
+    }
+  }
+
+  // 3. Capitalização pro-rata die da carência
+  const saldoBase = diasCarenciaExcedente > 0 && i > 0
+    ? principal * Math.pow(1 + i, diasCarenciaExcedente / 30)
+    : principal;
+
+  // 4. Fórmula determinística da Tabela Price
+  let parcelaCalculada = 0;
+  if (i > 0) {
+    const fator = (i * Math.pow(1 + i, numParcelas)) / (Math.pow(1 + i, numParcelas) - 1);
+    parcelaCalculada = saldoBase * fator;
+  } else {
+    parcelaCalculada = saldoBase / numParcelas;
+  }
+
+  return {
+    principal: Number(principal.toFixed(2)),
+    diasTotais: diasTotais,
+    diasCarenciaExcedente: diasCarenciaExcedente,
+    saldoBase: Number(saldoBase.toFixed(2)),
+    parcelaCalculada: Number(parcelaCalculada.toFixed(2))
+  };
+}
+
+/**
  * Calcula o valor da prestação periódica (PMT) pelo Sistema Francês de Amortização (Tabela Price).
  * Fórmula: PMT = PV * [i * (1 + i)^n] / [(1 + i)^n - 1]
  * @param {number} pv - Valor presente / financiado líquido.
@@ -63,32 +131,40 @@ function calcularPMT(pv, taxaMensal, n) {
 }
 
 /**
- * Calcula a taxa de juros implícita do contrato a partir do valor liberado, parcela e prazo.
+ * Calcula a taxa de juros implícita do contrato a partir do valor financiado, parcela, prazo
+ * e dias de carência excedente.
  * Utiliza o método híbrido de Newton-Raphson com salvaguarda por Bisseção.
- * @param {number} pv - Valor presente / financiado.
+ * 
+ * @param {number} pv - Valor presente / financiado real.
  * @param {number} pmt - Valor da parcela cobrada.
  * @param {number} n - Número total de parcelas.
- * @param {number} [palpiteInicial=0.03] - Estimativa inicial para o método numérico (ex.: 0.03 para 3%).
- * @returns {number} Taxa mensal implícita calculada em porcentagem (ex.: 3.0 para 3%).
+ * @param {number} [palpiteInicial=0.03] - Estimativa inicial para o método numérico.
+ * @param {number} [diasCarenciaExcedente=0] - Dias de carência além dos 30 dias regulares.
+ * @returns {number} Taxa mensal implícita calculada em porcentagem (ex.: 3.95 para 3.95%).
  */
-function calcularTaxaImplicita(pv, pmt, n, palpiteInicial) {
+function calcularTaxaImplicita(pv, pmt, n, palpiteInicial, diasCarenciaExcedente) {
   if (pv <= 0 || pmt <= 0 || n <= 0) {
     throw new Error("Parâmetros inválidos para cálculo da taxa implícita.");
   }
   
-  // Se o total pago for exatamente igual ao PV, a taxa é zero
-  if (Math.abs(pmt * n - pv) < 0.001) return 0;
-  if (pmt * n < pv) {
+  const carenciaDias = diasCarenciaExcedente && diasCarenciaExcedente > 0 ? Number(diasCarenciaExcedente) : 0;
+  const expCarencia = carenciaDias / 30;
+
+  // Se o total pago for exatamente igual ao PV e sem carência, a taxa é zero
+  if (Math.abs(pmt * n - pv) < 0.001 && carenciaDias === 0) return 0;
+  if (pmt * n < pv && carenciaDias === 0) {
     throw new Error("A soma das parcelas é menor que o valor financiado. Taxa negativa.");
   }
 
   const tolerancia = 1e-8;
   const maxIteracoesNewton = 50;
   
-  // Função f(i) = pmt * [1 - (1 + i)^(-n)] / i - pv = 0
+  // Função f(i) = pmt * [1 - (1 + i)^(-n)] / i - pv * (1 + i)^expCarencia = 0
   function f(i) {
     if (Math.abs(i) < 1e-12) return pmt * n - pv;
-    return pmt * (1 - Math.pow(1 + i, -n)) / i - pv;
+    const vpParcelas = pmt * (1 - Math.pow(1 + i, -n)) / i;
+    const saldoInicial = expCarencia > 0 ? pv * Math.pow(1 + i, expCarencia) : pv;
+    return vpParcelas - saldoInicial;
   }
 
   // Derivada f'(i) em relação à taxa i
@@ -97,7 +173,9 @@ function calcularTaxaImplicita(pv, pmt, n, palpiteInicial) {
     const fatorN = Math.pow(umMaisI, -n);
     const termo1 = pmt * n * Math.pow(umMaisI, -n - 1) / i;
     const termo2 = pmt * (1 - fatorN) / (i * i);
-    return termo1 - termo2;
+    const dVp = termo1 - termo2;
+    const dSaldo = expCarencia > 0 ? pv * expCarencia * Math.pow(umMaisI, expCarencia - 1) : 0;
+    return dVp - dSaldo;
   }
 
   // Tentativa 1: Newton-Raphson
@@ -383,15 +461,41 @@ function calcularRevisionalCompleta(params) {
     throw new Error("Dados obrigatórios inválidos: valorLiberado, prazo e valorParcela devem ser maiores que zero.");
   }
 
-  // 1. Taxa Implícita e Verificação de Inconsistência
-  const taxaImplicita = calcularTaxaImplicita(pv, pmtOriginal, n, taxaDeclarada / 100);
+  const iof = Math.max(0, Number(params.iof) || 0);
+
+  // 1. Apuração Exata da Carência e Prova de Consistência
+  const apuracaoCarencia = calcularParcelaPriceComCarencia({
+    valorLiberado: pv,
+    iof: iof,
+    tarifas: tarifas,
+    seguro: seguro,
+    taxaMensalPercentual: taxaDeclarada,
+    numParcelas: n,
+    dataContratacao: params.dataContrato,
+    dataPrimeiraParcela: params.dataPrimeiraParcela
+  });
+
+  const diasTotaisCarencia = apuracaoCarencia.diasTotais;
+  const diasCarenciaExcedente = apuracaoCarencia.diasCarenciaExcedente;
+  const parcelaEsperadaCarencia = apuracaoCarencia.parcelaCalculada;
+  const diferencaParcelaContrato = Math.abs(pmtOriginal - parcelaEsperadaCarencia);
+  const temDivergenciaConsistencia = taxaDeclarada > 0 && diferencaParcelaContrato > 0.10;
+
+  // 2. Taxa Implícita Real (considerando o valor financiado e os dias de carência excedente)
+  const taxaImplicita = calcularTaxaImplicita(
+    pv,
+    pmtOriginal,
+    n,
+    taxaDeclarada / 100,
+    diasCarenciaExcedente
+  );
   const diferencaTaxas = Math.abs(taxaImplicita - taxaDeclarada);
   const taxaInconsistente = taxaDeclarada > 0 && diferencaTaxas > 0.05;
 
-  // 2. Cronograma Original (Cenário A)
+  // 3. Cronograma Original (Cenário A)
   const cronogramaOriginal = gerarCronogramaPrice(pv, taxaImplicita, n, params.dataPrimeiraParcela);
 
-  // 3. Função auxiliar para calcular métricas de um cenário
+  // 4. Função auxiliar para calcular métricas de um cenário
   function simularCenario(id, nome, taxaTeto, valorBase, descricao) {
     const taxaAplicada = taxaTeto > 0 ? Math.min(taxaImplicita, taxaTeto) : taxaImplicita;
     const novoPmt = calcularPMT(valorBase, taxaAplicada, n);
@@ -541,6 +645,7 @@ function calcularRevisionalCompleta(params) {
   return {
     dadosContrato: {
       valorLiberado: pv,
+      iof: iof,
       prazo: n,
       valorParcela: pmtOriginal,
       taxaDeclaradaMensal: taxaDeclarada,
@@ -552,11 +657,32 @@ function calcularRevisionalCompleta(params) {
       taxaMediaBCBMensal: taxaMedia,
       taxaMediaBCBAnual: taxaMensalParaAnual(taxaMedia),
       razaoTaxaMercado: taxaMedia > 0 ? taxaImplicita / taxaMedia : 1.0,
+      diasTotaisCarencia: diasTotaisCarencia,
+      diasCarenciaExcedente: diasCarenciaExcedente,
+      parcelaCalculadaComCarencia: parcelaEsperadaCarencia,
+      validacaoConsistencia: {
+        divergenciaDetectada: temDivergenciaConsistencia,
+        diferencaReais: Number(diferencaParcelaContrato.toFixed(2)),
+        parcelaContrato: pmtOriginal,
+        parcelaCalculada: parcelaEsperadaCarencia,
+        mensagem: temDivergenciaConsistencia
+          ? "Divergência detectada na extração do contrato (R$ " + diferencaParcelaContrato.toFixed(2) + "). Verifique a data de carência ou encargos acessórios."
+          : "Cálculo pericial consistente com o contrato."
+      },
       tarifasExpurgadas: tarifas,
       seguroExpurgado: seguro,
       totalExpurgos: totalExpurgos,
       parcelasPagas: parcelasPagas,
       parcelasVincendas: n - parcelasPagas
+    },
+    validacaoConsistencia: {
+      divergenciaDetectada: temDivergenciaConsistencia,
+      diferencaReais: Number(diferencaParcelaContrato.toFixed(2)),
+      parcelaContrato: pmtOriginal,
+      parcelaCalculada: parcelaEsperadaCarencia,
+      mensagem: temDivergenciaConsistencia
+        ? "Divergência detectada na extração do contrato (R$ " + diferencaParcelaContrato.toFixed(2) + "). Verifique a data de carência ou encargos acessórios."
+        : "Cálculo pericial consistente com o contrato."
     },
     alertaComprometimento: alertaComprometimento,
     semaforo: semaforo,
@@ -620,16 +746,18 @@ function avaliarSemaforo(dados) {
   const limRelevanciaReais = cfg.limiar_relevancia_reais !== undefined ? Number(cfg.limiar_relevancia_reais) : 3000.0;
 
   const razao = taxaMedia > 0 ? taxaContrato / taxaMedia : 1.0;
-  const proveitoC = cenarioC ? cenarioC.proveitoTotalEstimado : 0;
+  const proveitoC = cenarioC ? (cenarioC.proveitoTotalEstimado || 0) : 0;
+  const proveitoLiquido = cenarioC ? (cenarioC.liquidoCliente !== undefined ? cenarioC.liquidoCliente : proveitoC) : 0;
 
-  // 1. Caso VERDE: Taxa excessiva (>= 2,0x a média) OU proveito financeiro muito alto
-  if (razao >= limVerdeMult || (razao >= limAmareloMult && proveitoC >= limRelevanciaReais)) {
+  // 1. Caso VERDE: Só habilita Alta Viabilidade se (taxaContrato / taxaBacen) >= 1.5 E proveitoEconomicoLiquido > 0
+  // Para razão >= 2.0 (abusividade manifesta) OU (>= 1.5x e proveito relevante):
+  if (proveitoLiquido > 0 && (razao >= limVerdeMult || (razao >= limAmareloMult && (proveitoC >= limRelevanciaReais || cfg.limite_verde_multiplicador === 1.5)))) {
     return {
       cor: "VERDE",
       titulo: "Alta Viabilidade Revisional",
       razao: razao,
-      explicacao: "A taxa efetiva do contrato (" + taxaContrato.toFixed(2) + "% a.m.) supera " + razao.toFixed(2) + "x a média de mercado do Banco Central (" + taxaMedia.toFixed(2) + "% a.m.), caracterizando abusividade manifesta segundo a jurisprudência dominante do STJ. O proveito econômico estimado é expressivo (R$ " + proveitoC.toFixed(2) + ").",
-      avisoLegal: "Triagem preliminar orientativa baseada em precedentes jurisprudenciais. Não constitui garantia de êxito nem substitui perícia contábil forense."
+      explicacao: "A taxa efetiva do contrato (" + taxaContrato.toFixed(2) + "% a.m.) supera " + razao.toFixed(2) + "x a média de mercado do Banco Central (" + taxaMedia.toFixed(2) + "% a.m.), atendendo rigorosamente ao critério vinculante do Tema 247/STJ (REsp 1.061.530/RS). O proveito econômico estimado é expressivo (R$ " + proveitoC.toFixed(2) + ").",
+      avisoLegal: "Triagem preliminar orientativa baseada em precedentes jurisprudenciais do STJ. Não constitui garantia de êxito nem substitui perícia contábil forense."
     };
   }
 
@@ -646,17 +774,17 @@ function avaliarSemaforo(dados) {
       titulo: "Viabilidade Média / Moderada",
       razao: razao,
       explicacao: motivo + " A viabilidade dependerá da orientação do magistrado local e da prova de que os serviços não foram prestados ou foram impostos em venda casada.",
-      avisoLegal: "Triagem preliminar orientativa baseada em precedentes jurisprudenciais. Não constitui garantia de êxito nem substitui perícia contábil forense."
+      avisoLegal: "Triagem preliminar orientativa baseada em precedentes jurisprudenciais do STJ."
     };
   }
 
-  // 3. Caso VERMELHO: Taxa abaixo de 1,5x e sem tarifas relevantes
+  // 3. Caso VERMELHO: Contrato dentro da média de mercado – Revisão inviável
   return {
     cor: "VERMELHO",
-    titulo: "Baixa Viabilidade Revisional",
+    titulo: "Contrato dentro da média de mercado – Revisão inviável",
     razao: razao,
-    explicacao: "A taxa praticada (" + taxaContrato.toFixed(2) + "% a.m.) representa apenas " + razao.toFixed(2) + "x a taxa média de mercado do BCB (" + taxaMedia.toFixed(2) + "% a.m.), patamar que a Segunda Seção do Superior Tribunal de Justiça (STJ) pacificamente considera lícito e não abusivo.",
-    avisoLegal: "Triagem preliminar orientativa baseada em precedentes jurisprudenciais. Não constitui garantia de êxito nem substitui perícia contábil forense."
+    explicacao: "A taxa praticada (" + taxaContrato.toFixed(2) + "% a.m.) representa apenas " + razao.toFixed(2) + "x a taxa média de mercado do BCB (" + taxaMedia.toFixed(2) + "% a.m.), patamar que a Segunda Seção do Superior Tribunal de Justiça (Súmula 382/STJ) pacificamente considera lícito e não abusivo.",
+    avisoLegal: "Triagem preliminar orientativa baseada na jurisprudência pacífica do STJ."
   };
 }
 
@@ -934,6 +1062,7 @@ if (typeof module !== "undefined" && module.exports) {
     taxaAnualParaMensal: taxaAnualParaMensal,
     taxaNominalParaEfetiva: taxaNominalParaEfetiva,
     calcularPMT: calcularPMT,
+    calcularParcelaPriceComCarencia: calcularParcelaPriceComCarencia,
     calcularTaxaImplicita: calcularTaxaImplicita,
     gerarCronogramaPrice: gerarCronogramaPrice,
     gerarCronogramaSAC: gerarCronogramaSAC,

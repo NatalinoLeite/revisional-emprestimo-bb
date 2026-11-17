@@ -107,27 +107,14 @@ function extrairDadosContratoComIA(arquivoBase64, mimeType) {
   }
 
   const promptExtracao = 
-    "Você é um perito contábil e assistente jurídico especializado na análise de contratos bancários brasileiros de crédito pessoal, em especial 'BB Crédito Salário' do Banco do Brasil.\n" +
-    "Examine atentamente o documento anexo (contrato, cédula de crédito bancário - CCB, ou extrato detalhado de operação).\n" +
-    "Extraia com precisão absoluta os dados da contratação solicitados no JSON Schema.\n" +
-    "Instruções específicas:\n" +
-    "- 'banco': Nome da instituição financeira credora (ex.: 'Banco do Brasil S.A.').\n" +
-    "- 'modalidade': Nome do produto (ex.: 'BB Crédito Salário', 'Crédito Pessoal Não Consignado').\n" +
-    "- 'valorLiberado': Valor líquido creditado na conta corrente do cliente em R$.\n" +
-    "- 'valorTotalFinanciado': Valor bruto financiado com IOF e tarifas.\n" +
-    "- 'prazo': Número total de prestações/meses contratados (ex.: 48, 60).\n" +
-    "- 'valorParcela': Valor da prestação mensal em R$.\n" +
-    "- 'taxaMensalContrato': Taxa de juros remuneratórios mensal declarada (% a.m.).\n" +
-    "- 'taxaAnualContrato': Taxa de juros anual declarada (% a.a.).\n" +
-    "- 'cetMensal': Custo Efetivo Total mensal (% a.m.).\n" +
-    "- 'cetAnual': Custo Efetivo Total anual (% a.a.).\n" +
-    "- 'iof': Valor do IOF em R$.\n" +
-    "- 'tarifaCadastro': Valor da Tarifa de Cadastro / TAC / Confecção de Cadastro em R$.\n" +
-    "- 'seguroPrestamista': Valor cobrado a título de Seguro Prestamista / Proteção Financeira em R$.\n" +
-    "- 'outrasTarifas': Soma de outras tarifas acessórias (avaliação, registro, serviços de terceiros).\n" +
-    "- 'dataContrato': Data da celebração no formato AAAA-MM-DD (ex.: '2023-04-15').\n" +
-    "- 'dataPrimeiraParcela': Data do primeiro vencimento no formato AAAA-MM-DD.\n" +
-    "- Se algum campo não estiver presente ou ilegível, informe 0 para números ou string vazia para textos. NUNCA invente dados.";
+    "Você é um auditor pericial contábil estrito. Sua única função é extrair dados literais da Cédula de Crédito Bancário (CCB) fornecida e estruturar o JSON de cálculo.\n\n" +
+    "REGRAS INVIOLÁVEIS (ZERO ALUCINAÇÃO):\n" +
+    "1. PROIBIÇÃO DE INVENÇÃO: Nunca estime, presuma ou invente valores, datas, tarifas ou taxas. Se um dado não estiver explícito no documento, retorne null ou 0.00.\n" +
+    "2. EXTRAÇÃO LITERAL DE TAXAS: Extraia exatamente a 'Taxa de Juros (ao mês)' e o 'Custo Efetivo Total (CET ao mês)' declarados no quadro da operação. Nunca recalcule a taxa por engenharia reversa ignorando o período de carência.\n" +
+    "3. DATAS E CARÊNCIA: Extraia obrigatoriamente a 'Data de Emissão/Contratação' e o 'Vencimento da Primeira Parcela' para o cálculo exato dos dias de carência.\n" +
+    "4. MODALIDADE EXATA: Classifique a operação estritamente conforme o título do contrato (ex: 'Crédito do Trabalhador / Consignado Privado' vs 'Crédito Pessoal Não Consignado'). Nunca use um título genérico ou de outro banco.\n" +
+    "5. PROVA DE CÁLCULO: Antes de gerar a saída final, valide se a soma das parcelas bate com o 'Valor Total do Empréstimo' informado no contrato. Se houver divergência superior a R$ 0,05, sinalize erro de leitura no campo 'observacoes' em vez de corrigir por conta própria.\n\n" +
+    "Retorne com rigor absoluto os campos do JSON Schema solicitado.";
 
   const schemaExtracao = {
     type: "OBJECT",

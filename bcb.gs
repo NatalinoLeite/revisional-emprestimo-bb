@@ -112,13 +112,14 @@ function consultarTaxasBancoCentral(params) {
   let posicaoRanking = null;
   let fonte = "";
 
-  // 3. Consulta Taxa Média de Mercado no SGS do Banco Central (Série 25464 para crédito pessoal mensal)
+  // 3. Identifica a série oficial do SGS do Banco Central conforme a modalidade do contrato
+  const infoSerie = obterCodigoSerieSGSPorModalidade(modalidade);
   try {
-    const resultadoSGS = consultarTaxaMediaSGS("25464", dataContratoISO);
+    const resultadoSGS = consultarTaxaMediaSGS(infoSerie.codigo, dataContratoISO);
     if (resultadoSGS && resultadoSGS.taxa !== null) {
       taxaMediaMensal = resultadoSGS.taxa;
       taxaMediaAnual = (Math.pow(1 + taxaMediaMensal / 100, 12) - 1) * 100;
-      fonte = "Banco Central do Brasil - SGS Série 25464 (" + resultadoSGS.dataReferencia + ")";
+      fonte = "Banco Central do Brasil - SGS Série " + infoSerie.codigo + " (" + infoSerie.nome + " - " + resultadoSGS.dataReferencia + ")";
     }
   } catch (erroSGS) {
     Logger.log("Aviso: Consulta SGS falhou. Tentando Olinda. Erro: " + erroSGS.message);
@@ -192,10 +193,42 @@ function consultarTaxasBancoCentral(params) {
 }
 
 /**
- * Consulta a taxa média mensal de mercado no Sistema Gerenciador de Séries Temporais (SGS) do BCB.
- * Série padrão de crédito pessoal não consignado: 25464 (% a.m.) ou 20741 (% a.a.).
+ * Mapeia o título ou nome da modalidade para a série temporal oficial do SGS/BACEN correspondente.
  * 
- * @param {string} codigoSerie - Código numérico da série no SGS.
+ * - Série 25469: Taxa média mensal - Crédito consignado para trabalhadores do setor privado (CLT)
+ * - Série 25467: Taxa média mensal - Crédito consignado para servidores públicos
+ * - Série 25468: Taxa média mensal - Crédito consignado para aposentados e pensionistas do INSS
+ * - Série 25471: Taxa média mensal - Financiamento de veículos
+ * - Série 25464: Taxa média mensal - Crédito pessoal não consignado (padrão)
+ * 
+ * @param {string} modalidade
+ * @returns {Object} { codigo, nome }
+ */
+function obterCodigoSerieSGSPorModalidade(modalidade) {
+  const mod = String(modalidade || "").toLowerCase().trim();
+
+  if (mod.includes("privad") || mod.includes("clt") || mod.includes("trabalhador") || mod.includes("setor privado")) {
+    return { codigo: "25469", nome: "Crédito consignado privado (CLT)" };
+  }
+  if (mod.includes("inss") || mod.includes("aposentad") || mod.includes("pensionist") || mod.includes("beneficiári")) {
+    return { codigo: "25468", nome: "Crédito consignado INSS" };
+  }
+  if (mod.includes("públic") || mod.includes("public") || mod.includes("servidor") || mod.includes("governo")) {
+    return { codigo: "25467", nome: "Crédito consignado público" };
+  }
+  if (mod.includes("veícul") || mod.includes("veicul") || mod.includes("auto") || mod.includes("carro") || mod.includes("moto")) {
+    return { codigo: "25471", nome: "Financiamento de veículos" };
+  }
+
+  // Padrão: Crédito pessoal não consignado
+  return { codigo: "25464", nome: "Crédito pessoal não consignado" };
+}
+
+/**
+ * Consulta a taxa média mensal de mercado no Sistema Gerenciador de Séries Temporais (SGS) do BCB.
+ * Utiliza o dia 01/MM/AAAA para consultar diretamente a taxa oficial vigente naquele mês.
+ * 
+ * @param {string} codigoSerie - Código numérico da série no SGS (ex.: 25464 ou 25469).
  * @param {string} dataISO - Data no formato YYYY-MM-DD.
  * @returns {Object} { taxa, dataReferencia }
  */
@@ -203,8 +236,28 @@ function consultarTaxaMediaSGS(codigoSerie, dataISO) {
   const partes = dataISO.split("-");
   const ano = parseInt(partes[0], 10);
   const mes = parseInt(partes[1], 10);
+  const mesFormatado = String(mes).padStart(2, "0");
 
-  // Busca janela de 3 meses ao redor da data para garantir retorno mesmo se o dia exato não tiver publicação
+  // 1. Tenta consulta direta com dataInicial e dataFinal = 01/MM/AAAA (padrão de publicação mensal do SGS)
+  const dtExata = "01/" + mesFormatado + "/" + ano;
+  const urlExata = "https://api.bcb.gov.br/dados/serie/bcdata.sgs." + codigoSerie + "/dados?formato=json&dataInicial=" + dtExata + "&dataFinal=" + dtExata;
+
+  try {
+    const respExata = executarHttpComRetry(urlExata, 2);
+    if (respExata) {
+      const dadosExatos = JSON.parse(respExata);
+      if (Array.isArray(dadosExatos) && dadosExatos.length > 0 && dadosExatos[0].valor) {
+        return {
+          taxa: parseFloat(String(dadosExatos[0].valor).replace(",", ".")),
+          dataReferencia: dadosExatos[0].data
+        };
+      }
+    }
+  } catch (e) {
+    // Continua para a janela ampliada se a consulta pontual falhar
+  }
+
+  // 2. Busca janela de 3 meses ao redor da data para garantir retorno mesmo se o dia exato não tiver publicação
   const mesInicio = Math.max(1, mes - 1);
   const mesFim = Math.min(12, mes + 1);
   const dtInicio = "01/" + String(mesInicio).padStart(2, "0") + "/" + ano;
@@ -572,6 +625,7 @@ if (typeof module !== "undefined" && module.exports) {
     consultarTaxaMediaSGS: consultarTaxaMediaSGS,
     consultarTaxaOlindaDiaria: consultarTaxaOlindaDiaria,
     consultarSerieIndicesSGS: consultarSerieIndicesSGS,
+    obterCodigoSerieSGSPorModalidade: obterCodigoSerieSGSPorModalidade,
     padronizarDataParaISO: padronizarDataParaISO,
     normalizarTexto: normalizarTexto
   };

@@ -301,11 +301,22 @@
         </div>
         <div class="form-group">
           <label class="form-label">Data da Contratação *</label>
-          <input type="date" id="con-data" class="form-control" value="2023-06-15">
+          <input type="date" id="con-data" class="form-control" value="2023-06-15" onchange="atualizarInfoCarencia()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display: flex; justify-content: space-between;">
+            <span>1º Vencimento (Carência) *</span>
+            <small id="badge-dias-carencia" style="color: var(--primary); font-weight: 600;"></small>
+          </label>
+          <input type="date" id="con-prim-venc" class="form-control" value="2023-07-15" onchange="atualizarInfoCarencia()">
         </div>
         <div class="form-group">
           <label class="form-label">Valor Liberado Líquido (R$) *</label>
           <input type="number" step="0.01" id="con-valor" class="form-control" value="25000.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">IOF Financiado (R$)</label>
+          <input type="number" step="0.01" id="con-iof" class="form-control" value="0.00">
         </div>
         <div class="form-group">
           <label class="form-label">Prazo (meses) *</label>
@@ -419,6 +430,11 @@
             <div style="font-weight: 600; color: var(--text-main);" id="laudo-cli-proc">Fase Pré-Processual</div>
           </div>
         </div>
+      </div>
+
+      <!-- ALERTA GUARDRAIL DE CONSISTÊNCIA / PROVA DE CÁLCULO -->
+      <div id="alerta-divergencia-consistencia" class="alert-box alert-warning" style="display: none; margin-bottom: 20px;">
+        <span id="texto-divergencia-consistencia"></span>
       </div>
 
       <div id="semaforo-box" class="semaforo-card semaforo-verde">
@@ -698,12 +714,15 @@
             if (d.banco) document.getElementById("con-banco").value = d.banco;
             if (d.modalidade) document.getElementById("con-mod").value = d.modalidade;
             if (d.dataContrato) document.getElementById("con-data").value = d.dataContrato;
+            if (d.dataPrimeiraParcela) document.getElementById("con-prim-venc").value = d.dataPrimeiraParcela;
             if (d.valorLiberado) document.getElementById("con-valor").value = d.valorLiberado;
+            if (d.iof !== undefined) document.getElementById("con-iof").value = d.iof;
             if (d.prazo) document.getElementById("con-prazo").value = d.prazo;
             if (d.valorParcela) document.getElementById("con-pmt").value = d.valorParcela;
             if (d.taxaMensalContrato) document.getElementById("con-taxa").value = d.taxaMensalContrato;
             if (d.tarifaCadastro) document.getElementById("con-tac").value = d.tarifaCadastro;
             if (d.seguroPrestamista) document.getElementById("con-seguro").value = d.seguroPrestamista;
+            atualizarInfoCarencia();
 
             badge.className = "alert-box alert-success";
             badge.style.display = "flex";
@@ -768,11 +787,31 @@
       atualizarPasso(3);
     }
 
+    function atualizarInfoCarencia() {
+      const d1 = document.getElementById("con-data")?.value;
+      const d2 = document.getElementById("con-prim-venc")?.value;
+      const badge = document.getElementById("badge-dias-carencia");
+      if (d1 && d2 && badge) {
+        const dt1 = new Date(d1 + "T00:00:00");
+        const dt2 = new Date(d2 + "T00:00:00");
+        if (!isNaN(dt1.getTime()) && !isNaN(dt2.getTime())) {
+          const dias = Math.round((dt2 - dt1) / (1000 * 60 * 60 * 24));
+          const excedente = Math.max(0, dias - 30);
+          if (excedente > 0) {
+            badge.innerText = dias + " dias (" + excedente + "d carência)";
+          } else {
+            badge.innerText = dias + " dias";
+          }
+        }
+      }
+    }
+
     async function aoExecutarCalculo() {
       mostrarLoading("Executando cálculo determinístico e apurando cenários...");
 
       const payload = {
         valorLiberado: parseFloat(document.getElementById("con-valor").value) || 25000,
+        iof: parseFloat(document.getElementById("con-iof").value) || 0,
         prazo: parseInt(document.getElementById("con-prazo").value, 10) || 48,
         valorParcela: parseFloat(document.getElementById("con-pmt").value) || 1192.50,
         taxaMensalContrato: parseFloat(document.getElementById("con-taxa").value) || 3.95,
@@ -781,7 +820,8 @@
         tarifas: parseFloat(document.getElementById("con-tac").value) || 0,
         seguro: parseFloat(document.getElementById("con-seguro").value) || 0,
         rendaLiquida: parseFloat(document.getElementById("cli-renda").value) || 0,
-        dataContrato: document.getElementById("con-data").value
+        dataContrato: document.getElementById("con-data").value,
+        dataPrimeiraParcela: document.getElementById("con-prim-venc").value
       };
 
       try {
@@ -828,6 +868,18 @@
       if (elBanco) elBanco.innerText = conBanco;
       if (elMod) elMod.innerText = conMod;
       if (elDataEmissao) elDataEmissao.innerText = new Date().toLocaleDateString("pt-BR");
+
+      // Guardrail de Consistência e Prova de Cálculo
+      const boxDiv = document.getElementById("alerta-divergencia-consistencia");
+      const txtDiv = document.getElementById("texto-divergencia-consistencia");
+      if (res.validacaoConsistencia && res.validacaoConsistencia.divergenciaDetectada) {
+        if (boxDiv && txtDiv) {
+          boxDiv.style.display = "flex";
+          txtDiv.innerHTML = "<b>⚠️ Trava de Segurança (Guardrail Pericial):</b> " + res.validacaoConsistencia.mensagem;
+        }
+      } else if (boxDiv) {
+        boxDiv.style.display = "none";
+      }
 
       const sem = res.semaforo;
       const cC = res.cenarios.C || res.cenarios.B;
@@ -1163,6 +1215,7 @@
     window.addEventListener("DOMContentLoaded", () => {
       // 0. Carregar chaves salvas no localStorage
       carregarChavesSalvas();
+      atualizarInfoCarencia();
 
       // 1. Alerta se executado via file://
       if (window.location.protocol === "file:") {

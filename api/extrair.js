@@ -44,24 +44,35 @@ module.exports = async function handler(req, res) {
     let provedorUtilizado = "";
 
     const promptExtracao = 
-      "Você é um perito contábil especializado em análise de contratos bancários brasileiros (em especial 'BB Crédito Salário' do Banco do Brasil).\n" +
-      "Analise o documento anexo e retorne OBRIGATORIAMENTE um JSON estrito com os campos:\n" +
+      "Você é um auditor pericial contábil estrito. Sua única função é extrair dados literais da Cédula de Crédito Bancário (CCB) fornecida e estruturar o JSON de cálculo.\n\n" +
+      "REGRAS INVIOLÁVEIS (ZERO ALUCINAÇÃO):\n" +
+      "1. PROIBIÇÃO DE INVENÇÃO: Nunca estime, presuma ou invente valores, datas, tarifas ou taxas. Se um dado não estiver explícito no documento, retorne null ou 0.00.\n" +
+      "2. EXTRAÇÃO LITERAL DE TAXAS: Extraia exatamente a 'Taxa de Juros (ao mês)' e o 'Custo Efetivo Total (CET ao mês)' declarados no quadro da operação. Nunca recalcule a taxa por engenharia reversa ignorando o período de carência.\n" +
+      "3. DATAS E CARÊNCIA: Extraia obrigatoriamente a 'Data de Emissão/Contratação' e o 'Vencimento da Primeira Parcela' para o cálculo exato dos dias de carência.\n" +
+      "4. MODALIDADE EXATA: Classifique a operação estritamente conforme o título do contrato (ex: 'Crédito do Trabalhador / Consignado Privado' vs 'Crédito Pessoal Não Consignado'). Nunca use um título genérico ou de outro banco.\n" +
+      "5. PROVA DE CÁLCULO: Antes de gerar a saída final, valide se a soma das parcelas bate com o 'Valor Total do Empréstimo' informado no contrato. Se houver divergência superior a R$ 0,05, sinalize erro de leitura no campo 'divergenciaExtracao' em vez de corrigir por conta própria.\n\n" +
+      "Retorne OBRIGATORIAMENTE um JSON estrito com as chaves:\n" +
       "{\n" +
-      '  "banco": "Nome do Banco (ex: BCO DO BRASIL S.A.)",\n' +
-      '  "modalidade": "Crédito pessoal não consignado - Prefixado",\n' +
-      '  "numeroContrato": "número da operação",\n' +
+      '  "banco": "Nome da Instituição Financeira credora",\n' +
+      '  "modalidade": "Título exato da modalidade (ex.: Crédito do Trabalhador / Consignado Privado)",\n' +
+      '  "numeroContrato": "número da operação ou CCB",\n' +
       '  "dataContrato": "AAAA-MM-DD",\n' +
       '  "dataPrimeiraParcela": "AAAA-MM-DD",\n' +
       '  "valorLiberado": 0.00,\n' +
+      '  "iof": 0.00,\n' +
+      '  "valorTotalFinanciado": 0.00,\n' +
       '  "prazo": 0,\n' +
       '  "valorParcela": 0.00,\n' +
       '  "taxaMensalContrato": 0.00,\n' +
       '  "taxaAnualContrato": 0.00,\n' +
+      '  "cetMensal": 0.00,\n' +
+      '  "cetAnual": 0.00,\n' +
       '  "tarifaCadastro": 0.00,\n' +
       '  "seguroPrestamista": 0.00,\n' +
-      '  "outrasTarifas": 0.00\n' +
+      '  "outrasTarifas": 0.00,\n' +
+      '  "divergenciaExtracao": null\n' +
       "}\n" +
-      "Apenas o JSON, sem markdown ou explicações.";
+      "Retorne apenas o JSON puro, sem formatação markdown.";
 
     // 1. TENTATIVA COM GEMINI (suporta nativamente PDF e imagens)
     if (geminiKey) {
